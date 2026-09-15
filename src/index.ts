@@ -14,6 +14,7 @@ import {
 import type { PacketDSLAst, PacketDslDiagnostic } from "./ast/packet.ts";
 import { parseRegisterMapDSL } from "./parser/register.ts";
 import { parseMemoryMapDSL } from "./parser/memorymap.ts";
+import { renderMemoryMapFromParse } from "./render/memorymap-svg.ts";
 import { detectWireglyphKind } from "./detect.ts";
 
 export {
@@ -51,12 +52,13 @@ export type {
   RenderedSvgPage,
 } from "./model/packet-diagram.ts";
 export * from "./ast/packet.ts";
-export { wrapPacketText, measureTextWidth } from "./layout/text.ts";
+export { wrapPacketText, measureTextWidth, fitThenWrap } from "./layout/text.ts";
 export type { PacketSvgRenderOptions };
 export { WireglyphError, DiagramRenderError } from "./errors.ts";
 export type { DiagramDiagnostic } from "./errors.ts";
 export { parseRegisterMapDSL } from "./parser/register.ts";
-export { parseMemoryMapDSL } from "./parser/memorymap.ts";
+export { parseMemoryMapDSL, formatAddressSpan } from "./parser/memorymap.ts";
+export type { MemoryMapRegion, MemoryMapParseResult } from "./parser/memorymap.ts";
 export { detectWireglyphKind } from "./detect.ts";
 export type { WireglyphKind } from "./detect.ts";
 export { svgId, validateCssFontFamily } from "./shared/svg-ids.ts";
@@ -216,14 +218,10 @@ export function renderMemoryMapSVG(
   options: PacketRenderOptions = {},
 ): string {
   const parsed = parseMemoryMapDSL(source);
-  const diagram = compileAst(parsed.ast, "memorymap");
-  const pages = renderPacketPages(diagram, {
-    ...options,
-    paginate: false,
-    standalone: true,
-  });
-  const svg = pages[0]?.svg;
-  if (!svg) throw new WireglyphError("memorymap: empty SVG");
+  const svg = renderMemoryMapFromParse(parsed, options);
+  if ((svg.match(/<svg\b/g) ?? []).length !== 1) {
+    throw new WireglyphError("memorymap: renderMemoryMapSVG must emit one SVG root");
+  }
   return svg;
 }
 

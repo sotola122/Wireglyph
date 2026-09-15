@@ -29,7 +29,7 @@ function parseAddr(value: string): number {
     : Number.parseInt(value, 10);
 }
 
-function formatAddressSpan(start: number, end: number): string {
+export function formatAddressSpan(start: number, end: number): string {
   const bytes = end - start + 1;
   const mib = 1024 * 1024;
   const kib = 1024;

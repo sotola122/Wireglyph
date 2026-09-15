@@ -197,7 +197,7 @@ function renderField(input: {
       box.x + box.width / 2,
       box.y + layout.labelBaselineOffset,
       {
-        size: ctx.fonts.label,
+        size: layout.labelFontSize,
         weight: 700,
         fill: accent ? ctx.colors.accent : ctx.colors.text,
         anchor: "middle",
@@ -226,10 +226,10 @@ function renderField(input: {
         box.x + box.width / 2,
         box.y + (layout.valueBaselineOffset ?? layout.sizeBaselineOffset),
         {
-          size: ctx.fonts.value,
+          size: layout.valueFontSize,
           fill: ctx.colors.text,
           anchor: "middle",
-          lineHeight: ctx.fonts.value * t.fieldText.labelLineHeight,
+          lineHeight: layout.valueFontSize * t.fieldText.labelLineHeight,
           fontFamily: ctx.fontFamily,
         },
       ),

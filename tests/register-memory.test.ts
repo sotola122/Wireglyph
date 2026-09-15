@@ -1,4 +1,7 @@
 import { describe, expect, test } from "vitest";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   detectWireglyphKind,
   parseMemoryMapDSL,
@@ -6,6 +9,14 @@ import {
   renderMemoryMapSVG,
   renderRegisterMapSVG,
 } from "../src/index.ts";
+
+function regionY(svg: string, label: string): number {
+  const tag = svg.match(
+    new RegExp(`<rect\\b([^>]*data-memory-region="${label}"[^>]*)\\/?>`),
+  );
+  const y = /(?:^|\s)y="([^"]+)"/.exec(tag?.[1] ?? "")?.[1];
+  return Number(y);
+}
 
 const register = `registermap
 title: CTRL
@@ -69,12 +80,39 @@ describe("memory map DSL", () => {
     expect(covered).toBe(16);
   });
 
-  test("renders SVG", () => {
+  test("renders a vertical address map with high addresses on top", () => {
     const svg = renderMemoryMapSVG(memory);
     expect(svg).toContain("<svg");
     expect(svg).toContain("SoC map");
     expect(svg).toContain("Flash");
-    expect(svg).toMatch(/MMI/);
+    expect(svg).toContain("0x7FFF");
+    expect(svg).toContain("0x0000");
+    expect(svg).toContain("not to scale");
+    expect(regionY(svg, "MMIO")).toBeLessThan(regionY(svg, "Boot ROM"));
+  });
+
+  test("marks discontinuities and keeps small firmware regions", () => {
+    const nrf = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../examples/memorymap/nrf52840.memorymap"),
+      "utf8",
+    );
+    const nrfSvg = renderMemoryMapSVG(nrf);
+    expect(nrfSvg).toContain("data-memory-gap");
+    expect(nrfSvg).toContain("MBR");
+    expect(nrfSvg).toContain("UICR");
+    expect(regionY(nrfSvg, "PPB")).toBeLessThan(regionY(nrfSvg, "MBR"));
+
+    const firmware = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        "../examples/memorymap/firmware-partitions.memorymap",
+      ),
+      "utf8",
+    );
+    const firmwareSvg = renderMemoryMapSVG(firmware);
+    expect(firmwareSvg).toContain("NVS settings");
+    expect(firmwareSvg).toContain("MCUBoot");
+    expect(firmwareSvg).toContain("64 KiB");
   });
 
   test("large regions use KiB/MiB size labels instead of packet NB", () => {
@@ -87,6 +125,7 @@ cols: 8
     const svg = renderMemoryMapSVG(source);
     expect(svg).toContain("4 MiB");
     expect(svg).toContain("16 KiB");
+    expect(svg).toContain("NVS");
     expect(svg).not.toContain(">2B</text>");
   });
 });

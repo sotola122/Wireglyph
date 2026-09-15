@@ -17,6 +17,7 @@ import {
   packetTextBlockHeight,
   wrapPacketText,
   textBoxWidth,
+  fitThenWrap,
 } from "./text.ts";
 import {
   resolvePacketTheme,
@@ -49,9 +50,11 @@ export type FieldTextLayout = {
   readonly height: number;
   readonly labelBaselineOffset: number;
   readonly labelLineHeight: number;
+  readonly labelFontSize: number;
   readonly labelLines: readonly string[];
   readonly sizeBaselineOffset: number;
   readonly valueBaselineOffset: number | undefined;
+  readonly valueFontSize: number;
   readonly valueLines: readonly string[];
 };
 
@@ -188,20 +191,29 @@ export function measureFieldTextLayout(
   field: NormalizedPacketField,
   width: number,
   fonts: PacketFontSizes,
+  minFontFloor = fonts.label,
 ): FieldTextLayout {
   const labelWidth = textBoxWidth(width, fonts.label, 10);
-  const labelLineHeight = fonts.label * t.fieldText.labelLineHeight;
-  const labelLines = wrapAtWidth(field.label, labelWidth, fonts.label);
+  const fittedLabel = fitThenWrap(
+    field.label,
+    labelWidth,
+    fonts.label,
+    minFontFloor,
+  );
+  const labelFontSize = fittedLabel.fontSize;
+  const labelLineHeight = labelFontSize * t.fieldText.labelLineHeight;
+  const labelLines = fittedLabel.lines;
   const labelBlockHeight = packetTextBlockHeight(
     labelLines,
-    fonts.label,
+    labelFontSize,
     labelLineHeight,
   );
   const sizeTop =
     t.fieldText.paddingTop + labelBlockHeight + t.fieldText.gapAfterLabel;
   const sizeBlockHeight = textBoundsHeight(fonts.size);
+  const valueWidth = textBoxWidth(width, fonts.value, 10);
   const valueLines = field.value
-    ? wrapAtWidth(field.value, labelWidth, fonts.value)
+    ? wrapAtWidth(field.value, valueWidth, fonts.value)
     : [];
   const valueLineHeight = fonts.value * t.fieldText.labelLineHeight;
   const valueBlockHeight = field.value
@@ -224,11 +236,13 @@ export function measureFieldTextLayout(
         valueBlockHeight +
         bottomReserve,
     ),
-    labelBaselineOffset: t.fieldText.paddingTop + fonts.label,
+    labelBaselineOffset: t.fieldText.paddingTop + labelFontSize,
     labelLineHeight,
+    labelFontSize,
     labelLines,
     sizeBaselineOffset: sizeTop + fonts.size,
     valueBaselineOffset,
+    valueFontSize: fonts.value,
     valueLines,
   };
 }
@@ -308,6 +322,7 @@ export function layoutLineGroup(
     readonly includeField?: boolean;
   },
   fonts: PacketFontSizes = resolvePacketTheme().fonts,
+  minFontFloor = fonts.label,
 ): LineGroupLayout {
   const includeField = laneSlice?.includeField !== false;
   const rulerMode = packet.ruler ?? "field";
@@ -324,7 +339,11 @@ export function layoutLineGroup(
         height: t.wrapFieldRowHeight,
       });
       return [
-        { field, segment, text: measureFieldTextLayout(field, box.width, fonts) },
+        {
+          field,
+          segment,
+          text: measureFieldTextLayout(field, box.width, fonts, minFontFloor),
+        },
       ];
     },
   );
@@ -546,12 +565,21 @@ function placeLineSlice(
   count: number,
   includeField: boolean,
   fonts: PacketFontSizes,
+  minFontFloor: number,
 ): LineGroupLayout {
-  return layoutLineGroup(packet, lineStart, lineEnd, y, {
-    start: laneStart,
-    count,
-    includeField,
-  }, fonts);
+  return layoutLineGroup(
+    packet,
+    lineStart,
+    lineEnd,
+    y,
+    {
+      start: laneStart,
+      count,
+      includeField,
+    },
+    fonts,
+    minFontFloor,
+  );
 }
 
 function pageByteRanges(slices: readonly LineGroupLayout[]): ByteRange[] {
@@ -578,6 +606,7 @@ export function layoutPacketPagesRaw(
 ): PacketPageLayout[] {
   const theme = options.theme ?? resolvePacketTheme(options);
   const fonts = theme.fonts;
+  const minFontFloor = theme.minFontFloor;
   const resolvedWidthMode: "available" | "fixed" = options.widthMode ?? "available";
   const standalone = options.standalone ?? false;
   const paginate = options.paginate ?? true;
@@ -642,6 +671,7 @@ export function layoutPacketPagesRaw(
         count,
         includeField,
         fonts,
+        minFontFloor,
       );
     }
     pageBody.push(next);
@@ -651,7 +681,15 @@ export function layoutPacketPagesRaw(
 
   for (let lineStart = 1; lineStart <= packet.cols; lineStart += wrap) {
     const lineEnd = Math.min(packet.cols, lineStart + wrap - 1);
-    const probe = layoutLineGroup(packet, lineStart, lineEnd, y, undefined, fonts);
+    const probe = layoutLineGroup(
+      packet,
+      lineStart,
+      lineEnd,
+      y,
+      undefined,
+      fonts,
+      minFontFloor,
+    );
     const totalLanes = probe.laneCount;
     if (totalLanes === 0) {
       if (paginate && probe.height > pageContentBudgetHeight) {
@@ -677,6 +715,7 @@ export function layoutPacketPagesRaw(
         count,
         includeField,
         fonts,
+        minFontFloor,
       );
       while (
         paginate &&
@@ -693,6 +732,7 @@ export function layoutPacketPagesRaw(
           count,
           includeField,
           fonts,
+          minFontFloor,
         );
       }
       if (paginate && placed.height > pageContentBudgetHeight) {

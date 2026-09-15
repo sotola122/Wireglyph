@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+- Wrap the first oversized token instead of painting it as one overflowing line
+- Shrink field labels toward `minFontPt` before wrapping; keep hex/value/range text complete
+- Draw memory maps as a vertical high-address-up band chart (`not to scale`), not a packet grid
+
 ## 0.1.1
 
 - Wrap packet text by token with ASCII/CJK width estimates instead of 1em-per-character slicing
