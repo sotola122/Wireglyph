@@ -1,0 +1,25 @@
+title: Connector Dashed Packet
+meta: Uses connector: dashed — detail panel with dashed connector lines
+cols: 16
+wrap: none
+ruler: field
+diagramRenderer: svg-parity
+
+B1: StartByte = 0x7E @accent role=header
+B2-3: Ctrl @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B1-4
+  bitsColumns: 2
+  connector: dashed
+  bits:
+    b7: EN @data role=flag
+    b6: DIS @data role=flag
+    b5: MODE @data role=flag
+    b4: RST @data role=flag
+    b3: IRQEN @data role=flag
+    b2: DMA @data role=flag
+    b1: SLEEP @data role=flag
+    b0: WAKE @data role=flag
+B4-8: Message @data role=payload
+B9-16: Signature @muted role=auth

@@ -1,0 +1,74 @@
+title: Multi-Page Planning Packet
+meta: 128 bytes wrap:32 — requires multiple pages with many line-groups
+cols: 128
+wrap: 32
+ruler: field
+diagramRenderer: svg-parity
+
+B1-4: HeaderBlock = 0xCAFE @accent role=header
+B5: Flags0 @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B1-8
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: F7 @data role=flag
+    b6: F6 @data role=flag
+    b5: F5 @data role=flag
+    b4: F4 @data role=flag
+    b3: F3 @data role=flag
+    b2: F2 @data role=flag
+    b1: F1 @data role=flag
+    b0: F0 @data role=flag
+B6-35: PayloadSegment1 @data role=payload
+B36: Flags1 @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B33-40
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: Valid @data role=flag
+    b6: Error @error role=flag
+    b5: Busy @warn role=flag
+    b4: Ready @data role=flag
+    b3: Mode3 @data role=flag
+    b2: Mode2 @data role=flag
+    b1: Mode1 @data role=flag
+    b0: Mode0 @data role=flag
+B37-70: PayloadSegment2 @data role=payload
+B71-74: ChecksumBlock @muted role=checksum
+B75: Flags2 @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B71-78
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: AuthOK @data role=flag
+    b6: CRCerr @error role=flag
+    b5: Timeout @warn role=flag
+    b4: Retry @data role=flag
+    b3: R3 @data role=flag
+    b2: R2 @data role=flag
+    b1: R1 @data role=flag
+    b0: R0 @data role=flag
+B76-119: PayloadSegment3 @data role=payload
+B120: StatusFlag @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B113-120
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: Done @data role=flag
+    b6: Pending @data role=flag
+    b5: Active @data role=flag
+    b4: Idle @data role=flag
+    b3: C3 @data role=flag
+    b2: C2 @data role=flag
+    b1: C1 @data role=flag
+    b0: C0 @data role=flag
+B121-127: Padding @muted role=fixed
+B128: FinalCheck @muted role=checksum

@@ -1,0 +1,39 @@
+title: 通常ステート時通知パケット
+meta: 16 bytes | Header=0xE1 | 使用暗号鍵=運用鍵
+cols: 16
+wrap: none
+ruler: field
+diagramRenderer: svg-parity
+
+B1: PacketID = 0x10 @accent role=header
+B2-3: Coin500 @data role=counter
+B4-5: Coin100 @data role=counter
+B6-7: Coin10 @data role=counter
+B8: Prize @data role=counter
+B9: Zero = 0x00 @fixed role=fixed
+B10: PP @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B8-12
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: Fixed0 = 0 @fixed role=fixed
+    b6: TestBtn @data role=flag
+    b5: Blocker500 @data role=flag
+    b4: Blocker100 @data role=flag
+    b3: CmdRx @data role=flag
+    b2: Reset @data role=flag
+    b1: PwrON @data role=flag
+    b0: CoinSim @data role=flag
+B11-12: DIC = 0x01, 0x23 @muted role=check
+B13-14: AuthentCode @data role=auth
+B15-16: RND + OUTstatus @note role=random
+  bitsView: stack
+  detailPlacement: below
+  detailRange: B13-16
+  connector: dotted
+  bitOrder: msb0
+  bits:
+    bit[15-1]: RND @data role=random
+    bit[0]: OUTstatus @data role=flag

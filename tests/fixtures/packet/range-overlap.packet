@@ -1,0 +1,11 @@
+title: Range Overlap Packet
+meta: Fields B4-8 and B6-10 overlap — should produce diagnostic
+cols: 16
+wrap: none
+ruler: field
+diagramRenderer: svg-parity
+
+B1-3: Preamble @accent role=header
+B4-8: SegmentA @data role=payload
+B6-10: SegmentB @data role=payload
+B11-16: Padding @muted role=fixed

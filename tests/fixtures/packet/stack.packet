@@ -1,0 +1,19 @@
+title: Stack View Packet
+meta: Shows bitsView: stack with uneven bit splits
+cols: 16
+wrap: none
+ruler: field
+diagramRenderer: svg-parity
+
+B1-4: MixedStatus @note role=random
+  bitsView: stack
+  detailPlacement: below
+  detailRange: B1-4
+  connector: dotted
+  bitOrder: msb0
+  bits:
+    bit[31-16]: HighRandom @data role=random
+    bit[15-4]: MidValue @data role=counter
+    bit[3-1]: SubFlags @data role=flag
+    bit[0]: Parity @fixed role=check
+B5-8: Continuation @data role=payload

@@ -1,0 +1,26 @@
+title: Long Text Wrap Packet
+meta: Very long labels that trigger auto-wrap behavior in narrow columns
+cols: 8
+wrap: none
+ruler: byte
+diagramRenderer: svg-parity
+
+B1: ThisIsAVeryLongLabelThatExceedsTypicalColumnWidth @accent role=header
+B2: AnotherExtremelyLongFieldNameThatShouldAutomaticallyWrapToNextLine @data role=payload
+B3-4: MediumLengthLabelHere @data role=payload
+B5: YetAnotherExtraordinarilyLongDescriptiveLabelForTestingPurposes @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B5-8
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: MaxLengthFlagFieldNameExceedsWidth @data role=flag
+    b6: Short @data role=flag
+    b5: AlsoShort @data role=flag
+    b4: Bit4 @data role=flag
+    b3: Bit3 @data role=flag
+    b2: Bit2 @data role=flag
+    b1: Bit1 @data role=flag
+    b0: Bit0 @data role=flag
+B6-8: Trailing data @muted role=fixed

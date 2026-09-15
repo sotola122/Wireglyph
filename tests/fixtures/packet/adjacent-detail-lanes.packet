@@ -1,0 +1,60 @@
+title: Adjacent detail lanes
+cols: 16
+wrap: none
+ruler: field
+diagramRenderer: svg-parity
+
+B1-5: Header @data role=header
+B6: CapabilityFlag @note role=flags
+  bitsView: detail
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: CapabilityFlagBit7 @data role=flag
+    b6: CapabilityFlagBit6 @data role=flag
+    b5: CapabilityFlagBit5 @data role=flag
+    b4: CapabilityFlagBit4 @data role=flag
+    b3: CapabilityFlagBit3 @data role=flag
+    b2: CapabilityFlagBit2 @data role=flag
+    b1: CapabilityFlagBit1 @data role=flag
+    b0: CapabilityFlagBit0 @data role=flag
+B7: IndustryType @note role=flags
+  bitsView: detail
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: IndustryTypeBit7 @data role=flag
+    b6: IndustryTypeBit6 @data role=flag
+    b5: IndustryTypeBit5 @data role=flag
+    b4: IndustryTypeBit4 @data role=flag
+    b3: IndustryTypeBit3 @data role=flag
+    b2: IndustryTypeBit2 @data role=flag
+    b1: IndustryTypeBit1 @data role=flag
+    b0: IndustryTypeBit0 @data role=flag
+B8-9: RND @note role=flags
+  bitsView: detail
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: RNDBit7 @data role=flag
+    b6: RNDBit6 @data role=flag
+    b5: RNDBit5 @data role=flag
+    b4: RNDBit4 @data role=flag
+    b3: RNDBit3 @data role=flag
+    b2: RNDBit2 @data role=flag
+    b1: RNDBit1 @data role=flag
+    b0: RNDBit0 @data role=flag
+B10-12: Payload @note role=flags
+  bitsView: detail
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: PayloadBit7 @data role=flag
+    b6: PayloadBit6 @data role=flag
+    b5: PayloadBit5 @data role=flag
+    b4: PayloadBit4 @data role=flag
+    b3: PayloadBit3 @data role=flag
+    b2: PayloadBit2 @data role=flag
+    b1: PayloadBit1 @data role=flag
+    b0: PayloadBit0 @data role=flag
+B13-16: Trailer @data role=data

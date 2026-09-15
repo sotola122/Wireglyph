@@ -1,0 +1,24 @@
+title: Detail Panel Packet
+meta: Shows PP-style bitsView: detail with 8-bit flag breakdown
+cols: 16
+wrap: none
+ruler: field
+diagramRenderer: svg-parity
+
+B1: FlagByte @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B1-4
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: Enable @data role=flag
+    b6: Disable @data role=flag
+    b5: Mode2 @data role=flag
+    b4: Mode1 @data role=flag
+    b3: Mode0 @data role=flag
+    b2: IRQ @warn role=flag
+    b1: Busy @data role=flag
+    b0: Ready @data role=flag
+B2-4: Reserved @muted role=fixed
+B5-8: Payload @data role=payload

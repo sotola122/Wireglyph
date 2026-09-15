@@ -1,0 +1,31 @@
+title: Grid View Packet
+meta: Shows bitsView: grid layout for uniform bit fields
+cols: 16
+wrap: none
+ruler: byte
+diagramRenderer: svg-parity
+
+B1-2: GridFlags @note role=flags
+  bitsView: grid
+  detailPlacement: below
+  detailRange: B1-2
+  bitsColumns: 8
+  connector: dotted
+  bits:
+    b7: F7 @data role=flag
+    b6: F6 @data role=flag
+    b5: F5 @data role=flag
+    b4: F4 @data role=flag
+    b3: F3 @data role=flag
+    b2: F2 @data role=flag
+    b1: F1 @data role=flag
+    b0: F0 @data role=flag
+    B2.b7: G7 @data role=flag
+    B2.b6: G6 @data role=flag
+    B2.b5: G5 @data role=flag
+    B2.b4: G4 @data role=flag
+    B2.b3: G3 @data role=flag
+    B2.b2: G2 @data role=flag
+    B2.b1: G1 @data role=flag
+    B2.b0: G0 @data role=flag
+B3-16: DataPayload @data role=payload

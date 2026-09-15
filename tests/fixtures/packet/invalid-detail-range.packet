@@ -1,0 +1,25 @@
+title: Invalid Detail Range Packet
+meta: detailRange B14-18 crosses wrap:8 boundary (B17 is in wrap line 3) — should fail validation
+cols: 16
+wrap: 8
+ruler: field
+diagramRenderer: svg-parity
+
+B1-4: Header @accent role=header
+B5-10: Payload @data role=payload
+B11: FlagField @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B14-18
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: Flag7 @data role=flag
+    b6: Flag6 @data role=flag
+    b5: Flag5 @data role=flag
+    b4: Flag4 @data role=flag
+    b3: Flag3 @data role=flag
+    b2: Flag2 @data role=flag
+    b1: Flag1 @data role=flag
+    b0: Flag0 @data role=flag
+B12-16: Trailer @muted role=checksum

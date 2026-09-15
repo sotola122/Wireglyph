@@ -1,0 +1,42 @@
+title: 256-byte wrap packet
+meta: 256 bytes | wrap:16 | CJK 長い値の検証
+cols: 256
+wrap: 16
+ruler: field
+diagramRenderer: svg-parity
+
+B1: Header = 0xE1 @accent role=header
+B2-15: ペイロード先頭 @data role=payload
+B16: FlagsA @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B9-16
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: Valid @data role=flag
+    b6: Error @error role=flag
+    b5: Busy @warn role=flag
+    b4: Ready @data role=flag
+    b3: Mode3 @data role=flag
+    b2: Mode2 @data role=flag
+    b1: Mode1 @data role=flag
+    b0: Mode0 @data role=flag
+B17-127: PayloadBlock @data role=payload
+B128: FlagsB @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B121-128
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: AuthOK @data role=flag
+    b6: CRCerr @error role=flag
+    b5: Timeout @warn role=flag
+    b4: Retry @data role=flag
+    b3: R3 @data role=flag
+    b2: R2 @data role=flag
+    b1: R1 @data role=flag
+    b0: R0 @data role=flag
+B129-255: 継続ペイロード @data role=payload
+B256: Checksum @muted role=checksum

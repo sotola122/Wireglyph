@@ -1,0 +1,57 @@
+{
+  "name": "@sotola122/wireglyph",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Deterministic binary field diagrams (packet, bitfield, register map, memory map): DSL → typed AST → grid layout → SVG.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sotola122/Wireglyph.git"
+  },
+  "homepage": "https://github.com/sotola122/Wireglyph",
+  "bugs": {
+    "url": "https://github.com/sotola122/Wireglyph/issues"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "keywords": [
+    "packet",
+    "bitfield",
+    "register-map",
+    "memory-map",
+    "svg",
+    "diagram",
+    "dsl"
+  ],
+  "author": "sotola122",
+  "files": [
+    "dist/",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.5"
+  }
+}

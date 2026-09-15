@@ -1,0 +1,12 @@
+title: Malicious Label Packet
+meta: Contains raw hostile markup to test XML escaping in SVG output
+cols: 16
+wrap: none
+ruler: field
+diagramRenderer: svg-parity
+
+B1: <script>alert(1)</script> @error role=header
+B2-4: " onload="alert(2) @warn role=payload
+B5-8: &lt;svg onload="alert(3)"&gt; @note role=payload
+B9-12: javascript:void(0) @data role=payload
+B13-16: NormalTrailer @muted role=checksum

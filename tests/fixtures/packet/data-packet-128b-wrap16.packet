@@ -1,0 +1,42 @@
+title: 128バイトデータパケット（wrap: 16）
+meta: 128 bytes | Header + Payload + Checksum | detail panels are line-local
+cols: 128
+wrap: 16
+ruler: field
+diagramRenderer: svg-parity
+
+B1: Header = 0xE1 @accent role=header
+B2-33: Payload continued @data role=payload
+B34: Status @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B33-40
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: Valid @data role=flag
+    b6: Error @error role=flag
+    b5: Busy @warn role=flag
+    b4: Ready @data role=flag
+    b3: Mode3 @data role=flag
+    b2: Mode2 @data role=flag
+    b1: Mode1 @data role=flag
+    b0: Mode0 @data role=flag
+B35-63: Payload continued @data role=payload
+B64: PayloadStatus @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B57-64
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: Valid @data role=flag
+    b6: Error @error role=flag
+    b5: Busy @warn role=flag
+    b4: Ready @data role=flag
+    b3: Mode3 @data role=flag
+    b2: Mode2 @data role=flag
+    b1: Mode1 @data role=flag
+    b0: Mode0 @data role=flag
+B65-127: Payload continued @data role=payload
+B128: Checksum @muted role=checksum

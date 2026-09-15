@@ -1,0 +1,8 @@
+title: Missing Cols Packet
+meta: Missing required cols key — should fail validation
+ruler: field
+wrap: none
+diagramRenderer: svg-parity
+
+B1-4: Header @accent role=header
+B5-8: Payload @data role=payload

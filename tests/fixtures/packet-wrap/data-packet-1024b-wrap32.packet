@@ -1,0 +1,42 @@
+title: 1024-byte wrap packet
+meta: 1024 bytes | wrap:32 | 複数ページ継続
+cols: 1024
+wrap: 32
+ruler: field
+diagramRenderer: svg-parity
+
+B1: Header = 0xE1 @accent role=header
+B2-31: 先頭ペイロード @data role=payload
+B32: FlagsHead @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B25-32
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: Valid @data role=flag
+    b6: Error @error role=flag
+    b5: Busy @warn role=flag
+    b4: Ready @data role=flag
+    b3: Mode3 @data role=flag
+    b2: Mode2 @data role=flag
+    b1: Mode1 @data role=flag
+    b0: Mode0 @data role=flag
+B33-512: MidPayload @data role=payload
+B513: FlagsMid @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B513-520
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: AuthOK @data role=flag
+    b6: CRCerr @error role=flag
+    b5: Timeout @warn role=flag
+    b4: Retry @data role=flag
+    b3: R3 @data role=flag
+    b2: R2 @data role=flag
+    b1: R1 @data role=flag
+    b0: R0 @data role=flag
+B514-1023: TailPayload @data role=payload
+B1024: Checksum @muted role=checksum

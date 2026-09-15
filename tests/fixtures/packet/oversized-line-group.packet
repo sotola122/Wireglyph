@@ -1,0 +1,17 @@
+title: Oversized Line-Group Packet
+meta: cols:256 wrap:256 with many fields per line — calculated height exceeds page content area
+cols: 256
+wrap: 256
+ruler: field
+diagramRenderer: svg-parity
+
+B1: StartMarker = 0xFE @accent role=header
+B2-33: DataSegmentA @data role=payload
+B34-65: DataSegmentB @data role=payload
+B66-97: DataSegmentC @data role=payload
+B98-129: DataSegmentD @data role=payload
+B130-161: DataSegmentE @data role=payload
+B162-193: DataSegmentF @data role=payload
+B194-225: DataSegmentG @data role=payload
+B226-255: DataSegmentH @data role=payload
+B256: EndMarker = 0x00 @muted role=checksum

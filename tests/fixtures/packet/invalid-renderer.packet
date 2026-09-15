@@ -1,0 +1,10 @@
+title: Invalid Renderer Packet
+meta: Uses diagramRenderer: html-grid instead of svg-parity — should fail validation
+cols: 16
+wrap: none
+ruler: field
+diagramRenderer: html-grid
+
+B1: Header = 0xE1 @accent role=header
+B2-8: Payload @data role=payload
+B9-16: Checksum @muted role=checksum

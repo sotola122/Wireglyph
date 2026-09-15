@@ -1,0 +1,25 @@
+title: Connector None Packet
+meta: Uses connector: none — detail panel without connector lines
+cols: 16
+wrap: none
+ruler: field
+diagramRenderer: svg-parity
+
+B1-4: HeaderBlock @accent role=header
+B5: ConfigFlags @note role=flags
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B5-8
+  bitsColumns: 4
+  connector: none
+  bits:
+    b7: Opt1 @data role=flag
+    b6: Opt2 @data role=flag
+    b5: Opt3 @data role=flag
+    b4: Opt4 @data role=flag
+    b3: Mode3 @data role=flag
+    b2: Mode2 @data role=flag
+    b1: Mode1 @data role=flag
+    b0: Mode0 @data role=flag
+B6-8: Reserved @muted role=fixed
+B9-16: Payload @data role=payload

@@ -1,0 +1,19 @@
+title: Long values and CJK
+meta: Preserve labels, values, newlines, and CJK without clipping
+cols: 8
+wrap: 8
+ruler: byte
+diagramRenderer: svg-parity
+
+B1-2: 通信状態通知 @accent role=header
+B3-4: ASCIIIdentifierWithoutSpaces = 0x0123456789ABCDEF @data role=payload
+B5: OneByte @data role=payload
+B6-8: Trailing @muted role=fixed
+  bitsView: stack
+  detailPlacement: below
+  detailRange: B6-8
+  bitsColumns: 4
+  connector: dotted
+  bits:
+    b7: 長いラベル値 = 0xFFEE @data role=flag
+    b0: Short @data role=flag

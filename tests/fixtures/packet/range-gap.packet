@@ -1,0 +1,10 @@
+title: Range Gap Packet
+meta: Non-contiguous ranges with a gap at B6-7 — should produce diagnostic
+cols: 16
+wrap: none
+ruler: field
+diagramRenderer: svg-parity
+
+B1-5: HeaderArea @accent role=header
+B8-12: PayloadArea @data role=payload
+B13-16: FooterArea @muted role=checksum

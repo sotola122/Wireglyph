@@ -1,0 +1,8 @@
+title: Basic Packet
+meta: Simplest valid packet with one field
+cols: 8
+wrap: none
+ruler: byte
+diagramRenderer: svg-parity
+
+B1: StartFlag = 0xAA @accent role=header
