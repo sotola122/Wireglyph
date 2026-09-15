@@ -72,6 +72,11 @@ cols: 16
 ```
 ````
 
+## Examples
+
+Complex Packet / Register Map / Memory Map samples live in [`examples/`](./examples/).
+`tests/examples.test.ts` renders every file; invalid DSL fails the suite.
+
 ## Isolation
 
 No `elkjs`, Yoga, or Mermaid runtime. SVG IDs are deterministic from `idPrefix`.

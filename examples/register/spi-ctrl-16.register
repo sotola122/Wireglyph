@@ -1,0 +1,18 @@
+registermap
+title: SPI CTRL
+meta: 16-bit SPI master control — CPHA/CPOL, baud divider, FIFO watermarks
+width: 16
+offset: 0x40013000
+
+[15:13] Reserved15 @muted role=rsvd
+[12:10] BaudDiv = 3 @data role=baud
+[9] LSBFirst = 0 @data role=rw
+[8] Slave = 0 @data role=rw
+[7] SPE = 1 @accent role=rw
+[6] Reserved6 @muted role=rsvd
+[5] TXIE = 1 @note role=irq
+[4] RXIE = 1 @note role=irq
+[3] ERRIE = 0 @warn role=irq
+[2] MSTR = 1 @accent role=rw
+[1] CPOL = 0 @data role=rw
+[0] CPHA = 0 @data role=rw

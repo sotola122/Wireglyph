@@ -1,0 +1,14 @@
+memorymap
+title: Cortex-M4 memory map
+meta: ARMv7-E-M default map — Code, SRAM, Peripheral, External, PPB
+cols: 32
+[0x00000000-0x0003FFFF] ITCM / Flash @fixed role=rom
+[0x00040000-0x1FFFFFFF] Reserved Code @muted role=rsvd
+[0x20000000-0x2001FFFF] SRAM @accent role=ram
+[0x20020000-0x3FFFFFFF] Reserved SRAM @muted role=rsvd
+[0x40000000-0x400FFFFF] APB/AHB Periph @note role=mmio
+[0x40100000-0x5FFFFFFF] Reserved Periph @muted role=rsvd
+[0x60000000-0x9FFFFFFF] External RAM @data role=ext
+[0xA0000000-0xDFFFFFFF] External Device @warn role=ext
+[0xE0000000-0xE00FFFFF] PPB / NVIC / SCB @error role=sys
+[0xE0100000-0xFFFFFFFF] Vendor @data role=vendor

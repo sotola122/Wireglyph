@@ -1,0 +1,42 @@
+title: IPv4 header
+meta: 20-byte internet header, no options — IHL/DSCP/ECN and Flags/Fragment Offset as bit stacks
+cols: 20
+wrap: none
+ruler: field
+diagramRenderer: svg-parity
+
+B1: VerIHL = 0x45 @accent role=hdr
+  bitsView: stack
+  detailPlacement: below
+  detailRange: B1-4
+  connector: dotted
+  bitOrder: msb0
+  bits:
+    bit[7-4]: Version = 4 @fixed role=ver
+    bit[3-0]: IHL = 5 @data role=ihl
+B2: DSCP ECN = 0x00 @note role=qos
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B1-4
+  bitsColumns: 4
+  connector: dashed
+  bits:
+    bit[7-2]: DSCP = 0 @data role=dscp
+    bit[1-0]: ECN = 0 @data role=ecn
+B3-4: Total Length = 0x003C @data role=len
+B5-6: Identification = 0x1C46 @data role=id
+B7-8: Flags FragOff = 0x4000 @warn role=frag
+  bitsView: stack
+  detailPlacement: below
+  detailRange: B5-8
+  connector: dotted
+  bits:
+    bit[15]: Reserved = 0 @muted role=rsvd
+    bit[14]: DF = 1 @accent role=flag
+    bit[13]: MF = 0 @data role=flag
+    bit[12-0]: FragOffset = 0 @data role=offset
+B9: TTL = 64 @data role=ttl
+B10: Protocol = 6 @note role=proto
+B11-12: Header Checksum @fixed role=crc
+B13-16: Src Address @data role=addr
+B17-20: Dst Address @data role=addr

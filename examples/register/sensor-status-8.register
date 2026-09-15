@@ -1,0 +1,14 @@
+registermap
+title: Sensor STATUS
+meta: 8-bit sticky status, W1C on FAULT/OVERRUN, live READY/BUSY
+width: 8
+offset: 0x48
+
+[7] FAULT = 0 @error role=w1c
+[6] OVERRUN = 0 @warn role=w1c
+[5] UNDERRUN = 0 @warn role=w1c
+[4] Reserved4 @muted role=rsvd
+[3] FIFOHalf = 0 @note role=ro
+[2] DATA = 1 @accent role=ro
+[1] BUSY = 0 @data role=ro
+[0] READY = 1 @fixed role=ro

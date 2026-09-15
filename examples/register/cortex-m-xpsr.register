@@ -1,0 +1,18 @@
+registermap
+title: Cortex-M XPSR
+meta: Combined Program Status Register at execute — N/Z/C/V, ISR number, Thumb/IT
+width: 32
+offset: 0xE000ED10
+
+[31] N = 0 @warn role=flag
+[30] Z = 1 @accent role=flag
+[29] C = 0 @data role=flag
+[28] V = 0 @data role=flag
+[27] Q = 0 @data role=flag
+[26:25] ICIIT1 = 0 @note role=it
+[24] T = 1 @fixed role=thumb
+[23:20] Reserved23 @muted role=rsvd
+[19:16] GE = 0 @data role=ge
+[15:10] ICIIT0 = 0 @note role=it
+[9] Reserved9 @muted role=rsvd
+[8:0] ISR = 0x00B @accent role=isr

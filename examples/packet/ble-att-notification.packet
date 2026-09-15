@@ -1,0 +1,41 @@
+title: BLE ATT Handle Value Notification
+meta: Opcode 0x1B, handle 0x002E, 45-byte packed environmental payload wrapping at 16 bytes
+cols: 48
+wrap: 16
+ruler: byte
+diagramRenderer: svg-parity
+
+B1: Opcode = 0x1B @accent role=hdr
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B1-4
+  bitsColumns: 4
+  connector: dotted
+  bitOrder: lsb0
+  bits:
+    bit[5-0]: Method = 27 @data role=method
+    b6: Command = 0 @data role=flag
+    b7: AuthSig = 0 @data role=flag
+B2-3: Attr Handle = 0x002E @note role=handle
+B4-7: Timestamp = 0x68F21A10 @data role=time
+B8: Flags = 0x07 @warn role=flags
+  bitsView: grid
+  detailPlacement: below
+  detailRange: B5-8
+  bitsColumns: 4
+  connector: dashed
+  bits:
+    b0: TempPresent = 1 @accent role=flag
+    b1: HumidPresent = 1 @accent role=flag
+    b2: PressPresent = 1 @accent role=flag
+    b3: BattPresent = 0 @data role=flag
+    b4: Reserved4 = 0 @muted role=rsvd
+    b5: Reserved5 = 0 @muted role=rsvd
+    b6: Reserved6 = 0 @muted role=rsvd
+    b7: Reserved7 = 0 @muted role=rsvd
+B9-12: Temperature = 0x0000097A @data role=temp
+B13-14: Humidity = 0x15B3 @data role=humid
+B15-18: Pressure = 0x00018A9C @data role=press
+B19-34: SerialUTF8 @data role=id
+B35-46: Calibration @note role=cal
+B47-48: CRC16 @fixed role=crc

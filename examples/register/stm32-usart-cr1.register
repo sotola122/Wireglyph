@@ -1,0 +1,25 @@
+registermap
+title: STM32 USART CR1
+meta: USART1 control register 1 — 32-bit, mix of 1-bit enables and 2-bit OVER8/M
+width: 32
+offset: 0x4001100C
+
+[31:29] Reserved31 @muted role=rsvd
+[28] M1 = 0 @data role=rw
+[27:16] Reserved27 @muted role=rsvd
+[15] OVER8 = 0 @note role=rw
+[14] CMIE = 0 @data role=rw
+[13] MME = 0 @data role=rw
+[12] M0 = 0 @data role=rw
+[11] WAKE = 0 @data role=rw
+[10] PCE = 0 @warn role=rw
+[9] PS = 0 @data role=rw
+[8] PEIE = 0 @data role=rw
+[7] TXEIE = 1 @accent role=rw
+[6] TCIE = 0 @data role=rw
+[5] RXNEIE = 1 @accent role=rw
+[4] IDLEIE = 0 @data role=rw
+[3] TE = 1 @accent role=rw
+[2] RE = 1 @accent role=rw
+[1] UESM = 0 @data role=rw
+[0] UE = 1 @fixed role=rw

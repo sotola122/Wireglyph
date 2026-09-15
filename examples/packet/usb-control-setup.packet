@@ -1,0 +1,22 @@
+title: USB control SETUP transaction
+meta: GET_DESCRIPTOR Device — bmRequestType bitfield plus wValue/wIndex/wLength
+cols: 8
+wrap: none
+ruler: byte
+diagramRenderer: svg-parity
+
+B1: bmRequestType = 0x80 @accent role=hdr
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B1-4
+  bitsColumns: 4
+  connector: dotted
+  bitOrder: lsb0
+  bits:
+    bit[4-0]: Recipient = 0 @data role=recip
+    bit[6-5]: Type = 0 @data role=type
+    b7: Direction = 1 @accent role=dir
+B2: bRequest = 0x06 @note role=cmd
+B3-4: wValue = 0x0100 @data role=value
+B5-6: wIndex = 0x0000 @muted role=index
+B7-8: wLength = 0x0012 @fixed role=len

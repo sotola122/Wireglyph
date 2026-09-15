@@ -1,0 +1,36 @@
+title: CAN FD data frame
+meta: 64-byte payload wrap 16 — arbitration, control, data, CRC. FDF/BRS/ESI in the control nibble
+cols: 80
+wrap: 16
+ruler: field
+diagramRenderer: svg-parity
+
+B1: SOF = 0 @fixed role=sof
+B2-5: Arbitration ID = 0x18FF50E5 @accent role=id
+  bitsView: stack
+  detailPlacement: below
+  detailRange: B1-8
+  connector: dotted
+  bits:
+    bit[31-29]: Priority = 6 @data role=prio
+    bit[28]: Reserved = 0 @muted role=rsvd
+    bit[27-8]: PGN = 0xFF50 @note role=pgn
+    bit[7-0]: SA = 0xE5 @data role=sa
+B6: Control = 0xF0 @note role=ctrl
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B1-8
+  bitsColumns: 4
+  connector: dashed
+  bits:
+    bit[3-0]: DLC = 15 @data role=dlc
+    b4: ReservedBit = 0 @muted role=rsvd
+    b5: FDF = 1 @accent role=flag
+    b6: BRS = 1 @accent role=flag
+    b7: ESI = 0 @warn role=flag
+B7-8: StuffCnt = 0x0000 @muted role=pad
+B9-72: Data 64B @data role=payload
+B73-76: CRC17 @fixed role=crc
+B77-78: CRCDelimit @fixed role=crc
+B79: ACK = 1 @accent role=ack
+B80: EOF = 0 @fixed role=eof

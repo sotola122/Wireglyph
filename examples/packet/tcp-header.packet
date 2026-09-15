@@ -1,0 +1,33 @@
+title: TCP header
+meta: SYN-ACK, window 64240 — 20-byte header with Data Offset/Flags bit grid
+cols: 20
+wrap: none
+ruler: byte
+diagramRenderer: svg-parity
+
+B1-2: Src Port = 443 @accent role=port
+B3-4: Dst Port = 49152 @accent role=port
+B5-8: Sequence = 0x00B1A2C3 @data role=seq
+B9-12: Ack Number = 0x00000001 @data role=ack
+B13-14: Offset Flags = 0x5012 @note role=flags
+  bitsView: grid
+  detailPlacement: below
+  detailRange: B13-16
+  bitsColumns: 4
+  connector: dotted
+  bitOrder: msb0
+  bits:
+    bit[15-12]: DataOff = 5 @fixed role=off
+    bit[11-9]: Reserved = 0 @muted role=rsvd
+    bit[8]: NS = 0 @data role=flag
+    b7: CWR = 0 @data role=flag
+    b6: ECE = 0 @data role=flag
+    b5: URG = 0 @data role=flag
+    b4: ACK = 1 @accent role=flag
+    b3: PSH = 0 @data role=flag
+    b2: RST = 0 @warn role=flag
+    b1: SYN = 1 @accent role=flag
+    b0: FIN = 0 @data role=flag
+B15-16: Window = 64240 @data role=win
+B17-18: Checksum @fixed role=crc
+B19-20: Urgent Ptr = 0 @muted role=urg

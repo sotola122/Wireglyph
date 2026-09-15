@@ -1,0 +1,10 @@
+registermap
+title: RTC timestamp
+meta: 64-bit free-running RTC — Unix seconds, subsecond, timezone nibble, sticky flags
+width: 64
+offset: 0x40002824
+
+[63:32] UnixSeconds = 0x68F21A10 @accent role=time
+[31:16] Subsecond = 0xA17C @data role=frac
+[15:8] TZQuarter = 0x09 @note role=tz
+[7:0] StatusFlags = 0xA1 @warn role=flags

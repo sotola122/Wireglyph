@@ -1,0 +1,12 @@
+memorymap
+title: Firmware partition table
+meta: 8MiB NOR — bootloader, two OTA slots, NVS, factory cal, scratch
+cols: 16
+0x000000-0x00FFFF: MCUBoot @fixed role=boot
+0x010000-0x01FFFF: MCUBoot scratch @muted role=scratch
+0x020000-0x41FFFF: Slot0 primary 4MiB @accent role=slot0
+0x420000-0x81FFFF: Slot1 secondary 4MiB @data role=slot1
+0x820000-0x83FFFF: LittleFS @note role=fs
+0x840000-0x84FFFF: NVS settings @warn role=nvs
+0x850000-0x85FFFF: Factory cal @error role=cal
+0x860000-0xFFFFFF: Reserved @muted role=rsvd

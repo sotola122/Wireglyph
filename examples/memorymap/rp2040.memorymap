@@ -1,0 +1,11 @@
+memorymap
+title: RP2040 address map
+meta: Dual Cortex-M0+ — XIP flash, SRAM banks, APB, IOPORT, SIO
+cols: 16
+[0x00000000-0x00003FFF] ROM 16KiB @fixed role=rom
+[0x10000000-0x101FFFFF] XIP Flash 2MiB @data role=flash
+[0x20000000-0x2003FFFF] SRAM 256KiB @accent role=ram
+[0x40000000-0x400FFFFF] APB Peripherals @note role=mmio
+[0x50000000-0x50000FFF] AHB-Lite DMA @warn role=dma
+[0xD0000000-0xD00001FF] SIO @error role=sio
+[0xE0000000-0xE000EFFF] PPB @data role=sys

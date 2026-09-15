@@ -7,3 +7,4 @@
 - Keep the Packet public API used by md-docs: parse / validate / normalize / adapt / render.
 - Add Register Map and Memory Map DSLs that compile onto the same packet grid.
 - Throw `WireglyphError` instead of sharing `DiagramRenderError` with Mermaid.
+- Add multi-pattern Packet / Register Map / Memory Map samples under `examples/` (rendered by `tests/examples.test.ts`).

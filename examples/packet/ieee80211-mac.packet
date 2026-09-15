@@ -1,0 +1,39 @@
+title: IEEE 802.11 MAC header
+meta: Data frame, ToDS=1 FromDS=0, QoS not present — 24-byte header with Frame Control bitfield
+cols: 24
+wrap: 8
+ruler: byte
+diagramRenderer: svg-parity
+
+B1-2: Frame Control = 0x4108 @accent role=hdr
+  bitsView: stack
+  detailPlacement: below
+  detailRange: B1-8
+  bitsColumns: 4
+  connector: dotted
+  bitOrder: lsb0
+  bits:
+    bit[1-0]: Protocol = 0 @fixed role=ver
+    bit[3-2]: Type = 2 @data role=type
+    bit[7-4]: Subtype = 8 @data role=subtype
+    bit[8]: ToDS = 1 @accent role=flag
+    bit[9]: FromDS = 0 @data role=flag
+    bit[10]: MoreFrag = 0 @data role=flag
+    bit[11]: Retry = 0 @warn role=flag
+    bit[12]: PwrMgmt = 0 @data role=flag
+    bit[13]: MoreData = 0 @data role=flag
+    bit[14]: Protected = 1 @accent role=flag
+    bit[15]: Order = 0 @data role=flag
+B3-4: Duration = 0x002C @data role=nav
+B5-10: Addr1 RA @data role=addr
+B11-16: Addr2 TA @data role=addr
+B17-22: Addr3 BSSID @note role=addr
+B23-24: Sequence Ctrl @fixed role=seq
+  bitsView: detail
+  detailPlacement: below
+  detailRange: B17-24
+  bitsColumns: 4
+  connector: dashed
+  bits:
+    bit[3-0]: Fragment @data role=frag
+    bit[15-4]: Sequence @data role=seq
