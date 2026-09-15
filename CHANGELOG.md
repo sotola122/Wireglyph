@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1
+
+- Wrap packet text by token with ASCII/CJK width estimates instead of 1em-per-character slicing
+- Size detail panels from natural one-line content width, clamped to the page
+- Resolve fonts per call (`resolvePacketTheme`); `minFontPt` floors size/badge/detailBody only
+- Default detail connectors to a solid arrow marker; drop endpoint circles and the `↘ detail` badge
+- Memory maps print KiB/MiB and registers print bit counts via `sizeLabel`
+
 ## 0.1.0
 
 - Extract Packet DSL from the md-docs beautiful-mermaid fork into `@sotola122/wireglyph`.

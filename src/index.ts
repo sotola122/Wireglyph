@@ -51,7 +51,7 @@ export type {
   RenderedSvgPage,
 } from "./model/packet-diagram.ts";
 export * from "./ast/packet.ts";
-export { wrapPacketText } from "./layout/text.ts";
+export { wrapPacketText, measureTextWidth } from "./layout/text.ts";
 export type { PacketSvgRenderOptions };
 export { WireglyphError, DiagramRenderError } from "./errors.ts";
 export type { DiagramDiagnostic } from "./errors.ts";

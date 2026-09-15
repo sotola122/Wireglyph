@@ -57,7 +57,9 @@ export interface PacketFieldAst {
   /** Byte range covered by the detail panel */
   detailRange?: string;
   /** Connector line style between field and detail panel */
-  connector?: "dotted" | "dashed" | "none";
+  connector?: "solid" | "dotted" | "dashed" | "none";
+  /** Display size override (memory map / register). Packet DSL leaves this unset. */
+  sizeLabel?: string;
   /** Number of columns in the bit-level grid */
   bitsColumns?: number;
   /** Bit ordering: MSB-first (0) or LSB-first (0) */
@@ -181,7 +183,7 @@ export interface NormalizedConnector {
   /** Source field range string */
   sourceRange: string;
   /** Line style */
-  kind: "dotted" | "dashed";
+  kind: "solid" | "dotted" | "dashed";
 }
 
 // === Canonical Layout Model ===
@@ -311,7 +313,7 @@ export interface ConnectorLayout {
   /** Intermediate route points for polyline routing */
   route: Point[];
   /** Line style */
-  kind: "dotted" | "dashed";
+  kind: "solid" | "dotted" | "dashed";
 }
 
 /** Per-page layout breakdown */

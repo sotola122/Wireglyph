@@ -6,10 +6,12 @@ import type {
 } from "../model/packet-diagram.ts";
 import { svgParityTokens as t } from "./tokens.ts";
 import {
+  measureTextWidth,
   packetTextBlockHeight,
   wrapPacketText,
   textBoxWidth,
 } from "./text.ts";
+import type { PacketFontSizes } from "./theme.ts";
 
 type DetailPanelMeasureInput = {
   readonly bits: readonly NormalizedPacketBit[];
@@ -18,6 +20,7 @@ type DetailPanelMeasureInput = {
   readonly detailWidth: number;
   readonly title: string;
   readonly sourceLabel: string;
+  readonly fonts: PacketFontSizes;
 };
 
 function wrapAtWidth(textValue: string, width: number, fontSize: number): string[] {
@@ -70,14 +73,14 @@ export function computeAutoDetailRange(
 export function measureDetailPanel(
   input: DetailPanelMeasureInput,
 ): DetailPanelMeasure {
-  const { bits, bitsView, bitsColumns, detailWidth, title, sourceLabel } = input;
+  const { bits, bitsView, bitsColumns, detailWidth, title, sourceLabel, fonts } = input;
   const badgeLabel = `from ${sourceLabel}`;
-  const header = measureDetailHeader(detailWidth, title, badgeLabel);
+  const header = measureDetailHeader(detailWidth, title, badgeLabel, fonts);
   const bodyOffsetY = header.headerHeight + t.detailPanel.bodyGap;
   const bodyWidth = Math.max(1, detailWidth - t.detailPaddingX * 2);
 
   if (bitsView === "stack") {
-    const rowLayouts = bits.map((bit) => measureStackBit(bit, bodyWidth));
+    const rowLayouts = bits.map((bit) => measureStackBit(bit, bodyWidth, fonts));
     const rowHeights = rowLayouts.map((row) => row.rowHeight);
     const bodyHeight = Math.max(
       rowHeights[0] ?? 0,
@@ -114,7 +117,7 @@ export function measureDetailPanel(
   const rowHeights: number[] = [];
   for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
     const rowBits = bits.slice(rowIndex * columns, (rowIndex + 1) * columns);
-    const cellLayouts = rowBits.map((bit) => measureGridCell(bit, cellWidth));
+    const cellLayouts = rowBits.map((bit) => measureGridCell(bit, cellWidth, fonts));
     const rowHeight = Math.max(
       0,
       ...cellLayouts.map((cell) => cell.rowHeight),
@@ -154,6 +157,7 @@ function measureDetailHeader(
   detailWidth: number,
   title: string,
   badgeLabel: string,
+  fonts: PacketFontSizes,
 ): {
   readonly headerHeight: number;
   readonly titleBaselineOffset: number;
@@ -164,22 +168,22 @@ function measureDetailHeader(
 } {
   const badgeHeight = Math.max(
     t.detailPanel.badge.minHeight,
-    t.detailPanel.badge.paddingY * 2 + textBoundsHeight(t.fonts.badge),
+    t.detailPanel.badge.paddingY * 2 + textBoundsHeight(fonts.badge),
   );
   const badgeWidth = Math.min(
     140,
-    Math.max(70, Array.from(badgeLabel).length * t.fonts.badge + 16),
+    Math.max(70, measureTextWidth(badgeLabel, fonts.badge) + 16),
   );
-  const sideBySideWidth = 14 + t.fonts.detailTitle + 10 + badgeWidth + 14;
+  const sideBySideWidth = 14 + fonts.detailTitle + 10 + badgeWidth + 14;
   const headerStacked = sideBySideWidth > detailWidth;
   const titleWidth = headerStacked
     ? detailWidth - 28
     : detailWidth - badgeWidth - 38;
-  const titleLines = wrapAtWidth(title, titleWidth, t.fonts.detailTitle);
+  const titleLines = wrapAtWidth(title, titleWidth, fonts.detailTitle);
   const titleHeight = packetTextBlockHeight(
     titleLines,
-    t.fonts.detailTitle,
-    t.fonts.detailTitle * 1.25,
+    fonts.detailTitle,
+    fonts.detailTitle * 1.25,
   );
   const contentHeight = headerStacked
     ? titleHeight + 6 + badgeHeight
@@ -192,7 +196,7 @@ function measureDetailHeader(
   );
   return {
     headerHeight,
-    titleBaselineOffset: t.detailPanel.headerPaddingTop + t.fonts.detailTitle,
+    titleBaselineOffset: t.detailPanel.headerPaddingTop + fonts.detailTitle,
     badgeHeight,
     badgeYOffset: headerStacked
       ? t.detailPanel.headerPaddingTop + titleHeight + 6
@@ -205,8 +209,9 @@ function measureDetailHeader(
 function measureGridCell(
   bit: NormalizedPacketBit,
   cellWidth: number,
+  fonts: PacketFontSizes,
 ): DetailRowLayout {
-  const fontSize = t.fonts.detailBody;
+  const fontSize = fonts.detailBody;
   const textWidth = textBoxWidth(cellWidth, fontSize, 20);
   const rangeLines = wrapAtWidth(bit.range, textWidth, fontSize);
   const labelLines = wrapAtWidth(bit.label, textWidth, fontSize);
@@ -243,54 +248,55 @@ function measureGridCell(
 function measureStackBit(
   bit: NormalizedPacketBit,
   bodyWidth: number,
+  fonts: PacketFontSizes,
 ): DetailRowLayout {
   const c1 = bodyWidth * 0.28;
   const c2 = bodyWidth * 0.46;
-  const labelWidth = textBoxWidth(c2, t.fonts.detailStack, 24);
-  const rangeWidth = textBoxWidth(c1, t.fonts.detailStack, 20);
+  const labelWidth = textBoxWidth(c2, fonts.detailStack, 24);
+  const rangeWidth = textBoxWidth(c1, fonts.detailStack, 20);
   const widthWidth = textBoxWidth(
     bodyWidth - c1 - c2,
-    t.fonts.detailStack,
+    fonts.detailStack,
     22,
   );
-  const rangeLines = wrapAtWidth(bit.range, rangeWidth, t.fonts.detailStack);
-  const labelLines = wrapAtWidth(bit.label, labelWidth, t.fonts.detailStack);
+  const rangeLines = wrapAtWidth(bit.range, rangeWidth, fonts.detailStack);
+  const labelLines = wrapAtWidth(bit.label, labelWidth, fonts.detailStack);
   const widthLines = wrapAtWidth(
     bit.widthLabel ?? "",
     widthWidth,
-    t.fonts.detailStack,
+    fonts.detailStack,
   );
   const valueLines = bit.value
-    ? wrapAtWidth(bit.value, labelWidth, t.fonts.detailBody)
+    ? wrapAtWidth(bit.value, labelWidth, fonts.detailBody)
     : [];
-  const stackLineHeight = t.fonts.detailStack * t.detailPanel.stack.valueLineHeight;
+  const stackLineHeight = fonts.detailStack * t.detailPanel.stack.valueLineHeight;
   const rangeHeight = packetTextBlockHeight(
     rangeLines,
-    t.fonts.detailStack,
+    fonts.detailStack,
     stackLineHeight,
   );
   const labelHeight = packetTextBlockHeight(
     labelLines,
-    t.fonts.detailStack,
+    fonts.detailStack,
     stackLineHeight,
   );
   const widthHeight = packetTextBlockHeight(
     widthLines,
-    t.fonts.detailStack,
+    fonts.detailStack,
     stackLineHeight,
   );
   const primaryHeight = Math.max(rangeHeight, labelHeight, widthHeight);
   const valueHeight = valueLines.length
     ? packetTextBlockHeight(
         valueLines,
-        t.fonts.detailBody,
-        t.fonts.detailBody * t.detailPanel.stack.valueLineHeight,
+        fonts.detailBody,
+        fonts.detailBody * t.detailPanel.stack.valueLineHeight,
       )
     : 0;
   const primaryBaselineOffset =
-    t.detailPanel.stack.paddingTop + t.fonts.detailStack;
+    t.detailPanel.stack.paddingTop + fonts.detailStack;
   const valueBaselineOffset = valueLines.length
-    ? t.detailPanel.stack.paddingTop + primaryHeight + t.fonts.detailBody
+    ? t.detailPanel.stack.paddingTop + primaryHeight + fonts.detailBody
     : undefined;
   return {
     rowHeight:
@@ -306,6 +312,43 @@ function measureStackBit(
     valueLines,
     widthLines,
   };
+}
+
+export function naturalDetailWidth(
+  bits: readonly NormalizedPacketBit[],
+  bitsView: BitsView,
+  bitsColumns: number | undefined,
+  fonts: PacketFontSizes,
+): number {
+  if (bitsView === "stack") {
+    let body = 0;
+    for (const bit of bits) {
+      const rangeW = measureTextWidth(bit.range, fonts.detailStack) + 20;
+      const labelW = measureTextWidth(bit.label, fonts.detailStack) + 24;
+      const widthW = measureTextWidth(bit.widthLabel ?? "", fonts.detailStack) + 22;
+      const valueW = bit.value
+        ? measureTextWidth(bit.value, fonts.detailBody) + 24
+        : 0;
+      body = Math.max(
+        body,
+        rangeW / 0.28,
+        Math.max(labelW, valueW) / 0.46,
+        widthW / 0.26,
+      );
+    }
+    return body + t.detailPaddingX * 2;
+  }
+  const columns = bitsColumns ?? (bitsView === "grid" ? 8 : 4);
+  let cell = 0;
+  for (const bit of bits) {
+    cell = Math.max(
+      cell,
+      measureTextWidth(bit.range, fonts.detailBody) + 20,
+      measureTextWidth(bit.label, fonts.detailBody) + 20,
+      bit.value ? measureTextWidth(bit.value, fonts.detailBody) + 20 : 0,
+    );
+  }
+  return cell * columns + t.detailPaddingX * 2;
 }
 
 function textBoundsHeight(fontSize: number): number {

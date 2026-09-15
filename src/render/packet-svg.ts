@@ -5,7 +5,8 @@ import {
   PACKET_A4_BODY_WIDTH_MM,
 } from "../layout/tokens.ts";
 import { attr, escapeXml } from "./xml.ts";
-import { validateCssFontFamily } from "../shared/svg-ids.ts";
+import { svgId } from "../shared/svg-ids.ts";
+import { resolvePacketTheme, type PacketFontSizes, type PacketColors } from "../layout/theme.ts";
 import type {
   Box,
   ByteRange,
@@ -16,7 +17,6 @@ import type {
   RenderedSvgPage,
 } from "../model/packet-diagram.ts";
 import {
-  applyPacketSvgFontSizeOverrides,
   fieldsInLine,
   formatRange,
   intersect,
@@ -26,7 +26,6 @@ import {
   PACKET_PAGE_BODY_BUDGET_PX,
   packetPageContentBudgetHeight,
   rangeSize,
-  restorePacketSvgFontSizes,
   type ConnectorLayout,
   type FieldTextLayout,
   type LineGroupLayout,
@@ -41,12 +40,12 @@ export {
   layoutPacketPages,
 };
 
-const DEFAULT_FONT = "'Noto Sans CJK JP','Yu Gothic','Meiryo',Arial,sans-serif";
-let currentFontFamily = DEFAULT_FONT;
-
-function getPacketSvgFontFamily(): string {
-  return currentFontFamily;
-}
+type SvgCtx = {
+  readonly fonts: PacketFontSizes;
+  readonly fontFamily: string;
+  readonly colors: PacketColors;
+  readonly idPrefix: string;
+};
 
 const rect = (
   box: Box,
@@ -78,9 +77,10 @@ const text = (
     weight?: string | number;
     fill?: string;
     anchor?: "start" | "middle" | "end";
-  } = { size: 10 },
+    fontFamily: string;
+  },
 ): string =>
-  `<text${attr({ x, y, "font-size": options.size, "font-weight": options.weight, fill: options.fill ?? t.colors.text, "text-anchor": options.anchor ?? "start", "font-family": getPacketSvgFontFamily() })}>${escapeXml(body)}</text>`;
+  `<text${attr({ x, y, "font-size": options.size, "font-weight": options.weight, fill: options.fill ?? t.colors.text, "text-anchor": options.anchor ?? "start", "font-family": options.fontFamily })}>${escapeXml(body)}</text>`;
 
 function renderLines(
   lines: readonly string[],
@@ -92,6 +92,7 @@ function renderLines(
     fill?: string;
     anchor?: "start" | "middle" | "end";
     lineHeight?: number;
+    fontFamily: string;
   },
 ): string {
   const lineHeight = options.lineHeight ?? options.size * 1.4;
@@ -113,22 +114,39 @@ function renderLines(
     "font-weight": options.weight,
     fill: options.fill ?? t.colors.text,
     "text-anchor": options.anchor ?? "start",
-    "font-family": getPacketSvgFontFamily(),
+    "font-family": options.fontFamily,
   })}>${tspans}</text>`;
 }
 
-const polyline = (points: readonly Point[], kind: "dotted" | "dashed"): string =>
-  `<polyline${attr({ points: points.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" "), fill: "none", stroke: t.colors.connector, "stroke-width": t.connectorStrokeWidth, "stroke-dasharray": kind === "dashed" ? t.connectorDashed : t.connectorDotted, "stroke-linecap": "round", "stroke-linejoin": "round" })} data-connector-kind="${kind}"/>`;
-
-const circle = (p: Point, r = 4): string =>
-  `<circle${attr({ cx: p.x, cy: p.y, r, fill: t.colors.accent })}/>`;
+const polyline = (
+  points: readonly Point[],
+  kind: "solid" | "dotted" | "dashed",
+  markerId: string,
+): string => {
+  const dash =
+    kind === "dashed"
+      ? t.connectorDashed
+      : kind === "dotted"
+        ? t.connectorDotted
+        : undefined;
+  return `<polyline${attr({
+    points: points.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" "),
+    fill: "none",
+    stroke: t.colors.connector,
+    "stroke-width": t.connectorStrokeWidth,
+    "stroke-dasharray": dash,
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "marker-end": `url(#${markerId})`,
+  })} data-connector-kind="${kind}"/>`;
+};
 
 function textBoundsHeight(fontSize: number): number {
   return fontSize * (1 + t.textMetrics.descent);
 }
 
-function badgeTextBaselineOffset(height: number): number {
-  return (height - textBoundsHeight(t.fonts.badge)) / 2 + t.fonts.badge;
+function badgeTextBaselineOffset(height: number, fontSize: number): number {
+  return (height - textBoundsHeight(fontSize)) / 2 + fontSize;
 }
 
 const badge = (
@@ -137,21 +155,23 @@ const badge = (
   width: number,
   height: number,
   label: string,
+  ctx: SvgCtx,
 ): string =>
   rect(
     { x, y, width, height },
     {
       fill: "#ffffff",
-      stroke: t.colors.borderStrong,
+      stroke: ctx.colors.borderStrong,
       strokeWidth: t.borderWidth,
       rx: height / 2,
     },
   ) +
-  text(x + width / 2, y + badgeTextBaselineOffset(height), label, {
-    size: t.fonts.badge,
+  text(x + width / 2, y + badgeTextBaselineOffset(height, ctx.fonts.badge), label, {
+    size: ctx.fonts.badge,
     weight: 700,
-    fill: t.colors.accent,
+    fill: ctx.colors.accent,
     anchor: "middle",
+    fontFamily: ctx.fontFamily,
   });
 
 function renderField(input: {
@@ -159,14 +179,15 @@ function renderField(input: {
   readonly box: Box;
   readonly sourceRange: ByteRange;
   readonly layout: FieldTextLayout;
+  readonly ctx: SvgCtx;
 }): string {
-  const { field, box, layout, sourceRange } = input;
+  const { field, box, layout, sourceRange, ctx } = input;
   const accent = field.preset === "accent" || field.preset === "note";
   const out: string[] = [];
   out.push(
     rect(box, {
-      fill: t.colors.fieldBg,
-      stroke: t.colors.border,
+      fill: ctx.colors.fieldBg,
+      stroke: ctx.colors.border,
       strokeWidth: t.borderWidth,
     }),
   );
@@ -176,11 +197,12 @@ function renderField(input: {
       box.x + box.width / 2,
       box.y + layout.labelBaselineOffset,
       {
-        size: t.fonts.label,
+        size: ctx.fonts.label,
         weight: 700,
-        fill: accent ? t.colors.accent : t.colors.text,
+        fill: accent ? ctx.colors.accent : ctx.colors.text,
         anchor: "middle",
         lineHeight: layout.labelLineHeight,
+        fontFamily: ctx.fontFamily,
       },
     ),
   );
@@ -188,11 +210,12 @@ function renderField(input: {
     text(
       box.x + box.width / 2,
       box.y + layout.sizeBaselineOffset,
-      rangeSize(sourceRange),
+      field.sizeLabel ?? rangeSize(sourceRange),
       {
-        size: t.fonts.size,
-        fill: t.colors.muted,
+        size: ctx.fonts.size,
+        fill: ctx.colors.muted,
         anchor: "middle",
+        fontFamily: ctx.fontFamily,
       },
     ),
   );
@@ -203,25 +226,14 @@ function renderField(input: {
         box.x + box.width / 2,
         box.y + (layout.valueBaselineOffset ?? layout.sizeBaselineOffset),
         {
-          size: t.fonts.value,
-          fill: t.colors.text,
+          size: ctx.fonts.value,
+          fill: ctx.colors.text,
           anchor: "middle",
-          lineHeight: t.fonts.value * t.fieldText.labelLineHeight,
+          lineHeight: ctx.fonts.value * t.fieldText.labelLineHeight,
+          fontFamily: ctx.fontFamily,
         },
       ),
     );
-  if (field.detail) {
-    out.push(
-      badge(
-        box.x + box.width / 2 - 40,
-        box.y + box.height - 18,
-        80,
-        16,
-        "↘ detail",
-      ),
-    );
-    out.push(circle({ x: box.x + box.width / 2, y: box.y + box.height }));
-  }
   return out.join("\n");
 }
 
@@ -231,6 +243,7 @@ function renderRuler(
   lineEnd: number,
   rulerMode: "field" | "byte" | "none",
   packet: NormalizedPacketDiagram,
+  ctx: SvgCtx,
 ): string {
   const cols = lineEnd - lineStart + 1;
   const colW = columnWidth(cols);
@@ -271,10 +284,11 @@ function renderRuler(
       );
       out.push(
         text(segX + segWidth / 2, y + 15, formatRange(segment), {
-          size: t.fonts.ruler,
+          size: ctx.fonts.ruler,
           weight: 700,
-          fill: t.colors.text,
+          fill: ctx.colors.text,
           anchor: "middle",
+          fontFamily: ctx.fontFamily,
         }),
       );
     }
@@ -283,10 +297,11 @@ function renderRuler(
       const byteNum = lineStart + i;
       out.push(
         text(t.marginX + (i + 0.5) * colW, y + 15, `B${byteNum}`, {
-          size: t.fonts.ruler,
+          size: ctx.fonts.ruler,
           weight: 700,
-          fill: t.colors.text,
+          fill: ctx.colors.text,
           anchor: "middle",
+          fontFamily: ctx.fontFamily,
         }),
       );
     }
@@ -300,6 +315,7 @@ function renderDetailPanel(
   y: number,
   width: number,
   measure: DetailPanelMeasure,
+  ctx: SvgCtx,
 ): string {
   if (!field.detail) return "";
   const height = measure.height;
@@ -340,14 +356,15 @@ function renderDetailPanel(
 
   const badgeWidth = Math.min(
     140,
-    Math.max(70, Array.from(measure.badgeLabel).length * t.fonts.badge + 16),
+    Math.max(70, Array.from(measure.badgeLabel).length * ctx.fonts.badge + 16),
   );
   out.push(
     renderLines(measure.titleLines, x + 14, y + measure.titleBaselineOffset, {
-      size: t.fonts.detailTitle,
+      size: ctx.fonts.detailTitle,
       weight: 700,
       fill: t.colors.accent,
-      lineHeight: t.fonts.detailTitle * 1.25,
+      lineHeight: ctx.fonts.detailTitle * 1.25,
+      fontFamily: ctx.fontFamily,
     }),
   );
   out.push(
@@ -357,6 +374,7 @@ function renderDetailPanel(
       badgeWidth,
       measure.badgeHeight,
       measure.badgeLabel,
+      ctx,
     ),
   );
 
@@ -407,19 +425,21 @@ function renderDetailPanel(
         );
       const stackRow: string[] = [
         renderLines(layout.rangeLines, body.x + 10, rowY + layout.primaryBaselineOffset, {
-          size: t.fonts.detailStack,
+          size: ctx.fonts.detailStack,
           fill: t.colors.text,
-          lineHeight: t.fonts.detailStack * t.detailPanel.stack.valueLineHeight,
+          lineHeight: ctx.fonts.detailStack * t.detailPanel.stack.valueLineHeight,
+          fontFamily: ctx.fontFamily,
         }),
         renderLines(
           layout.labelLines,
           body.x + c1 + 12,
           rowY + layout.primaryBaselineOffset,
           {
-            size: t.fonts.detailStack,
+            size: ctx.fonts.detailStack,
             weight: 700,
             fill: t.colors.accent,
-            lineHeight: t.fonts.detailStack * t.detailPanel.stack.valueLineHeight,
+            lineHeight: ctx.fonts.detailStack * t.detailPanel.stack.valueLineHeight,
+          fontFamily: ctx.fontFamily,
           },
         ),
         renderLines(
@@ -427,10 +447,11 @@ function renderDetailPanel(
           body.x + body.width - 10,
           rowY + layout.primaryBaselineOffset,
           {
-            size: t.fonts.detailStack,
+            size: ctx.fonts.detailStack,
             fill: t.colors.text,
             anchor: "end",
-            lineHeight: t.fonts.detailStack * t.detailPanel.stack.valueLineHeight,
+            lineHeight: ctx.fonts.detailStack * t.detailPanel.stack.valueLineHeight,
+          fontFamily: ctx.fontFamily,
           },
         ),
       ];
@@ -441,9 +462,10 @@ function renderDetailPanel(
             body.x + c1 + 12,
             rowY + (layout.valueBaselineOffset ?? layout.primaryBaselineOffset),
             {
-              size: t.fonts.detailBody,
+              size: ctx.fonts.detailBody,
               fill: t.colors.muted,
-              lineHeight: t.fonts.detailBody * t.detailPanel.stack.valueLineHeight,
+              lineHeight: ctx.fonts.detailBody * t.detailPanel.stack.valueLineHeight,
+              fontFamily: ctx.fontFamily,
             },
           ),
         );
@@ -480,19 +502,21 @@ function renderDetailPanel(
       const rowY = body.y + rowOffset(r);
       const cellGroup: string[] = [
         renderLines(layout.rangeLines, tx, rowY + layout.primaryBaselineOffset, {
-          size: t.fonts.detailBody,
+          size: ctx.fonts.detailBody,
           weight: 700,
           fill: t.colors.accent,
-          lineHeight: t.fonts.detailBody * t.detailPanel.grid.lineHeight,
+          lineHeight: ctx.fonts.detailBody * t.detailPanel.grid.lineHeight,
+          fontFamily: ctx.fontFamily,
         }),
         renderLines(
           layout.labelLines,
           tx,
           rowY + (layout.secondaryBaselineOffset ?? layout.primaryBaselineOffset),
           {
-            size: t.fonts.detailBody,
+            size: ctx.fonts.detailBody,
             fill: t.colors.text,
-            lineHeight: t.fonts.detailBody * t.detailPanel.grid.lineHeight,
+            lineHeight: ctx.fonts.detailBody * t.detailPanel.grid.lineHeight,
+          fontFamily: ctx.fontFamily,
           },
         ),
       ];
@@ -503,9 +527,10 @@ function renderDetailPanel(
             tx,
             rowY + (layout.valueBaselineOffset ?? layout.primaryBaselineOffset),
             {
-              size: t.fonts.detailBody,
+              size: ctx.fonts.detailBody,
               fill: t.colors.muted,
-              lineHeight: t.fonts.detailBody * t.detailPanel.grid.lineHeight,
+              lineHeight: ctx.fonts.detailBody * t.detailPanel.grid.lineHeight,
+          fontFamily: ctx.fontFamily,
             },
           ),
         );
@@ -523,18 +548,20 @@ function joinSvgParts(...parts: readonly string[]): string {
   return parts.filter((part) => part.length > 0).join("\n");
 }
 
-function emitConnector(connector: ConnectorLayout): string {
-  return joinSvgParts(polyline(connector.points, connector.kind), circle(connector.points[0]!), circle(connector.points[connector.points.length - 1]!));
+function emitConnector(connector: ConnectorLayout, markerId: string): string {
+  return polyline(connector.points, connector.kind, markerId);
 }
 
 function emitLineGroup(
   packet: NormalizedPacketDiagram,
   group: LineGroupLayout,
+  ctx: SvgCtx,
 ): { fieldSvg: string; connectorSvg: string; panelSvg: string } {
+  const markerId = svgId(ctx.idPrefix, "pkt-arrow");
   const fieldOut: string[] = [];
   if (group.includeField) {
     fieldOut.push(
-      renderRuler(group.y, group.lineStart, group.lineEnd, group.rulerMode, packet),
+      renderRuler(group.y, group.lineStart, group.lineEnd, group.rulerMode, packet, ctx),
     );
     for (const entry of group.fields) {
       fieldOut.push(
@@ -543,13 +570,16 @@ function emitLineGroup(
           box: entry.box,
           sourceRange: entry.sourceRange,
           layout: entry.text,
+          ctx,
         }),
       );
     }
   }
-  const connectorOut = group.connectors.map(emitConnector);
+  const connectorOut = group.connectors.map((connector) =>
+    emitConnector(connector, markerId),
+  );
   const panelOut = group.panels.map((panel) =>
-    renderDetailPanel(panel.field, panel.x, panel.y, panel.width, panel.measure),
+    renderDetailPanel(panel.field, panel.x, panel.y, panel.width, panel.measure, ctx),
   );
   return {
     fieldSvg: fieldOut.join("\n"),
@@ -561,8 +591,9 @@ function emitLineGroup(
 function composePageLayers(
   packet: NormalizedPacketDiagram,
   slices: readonly LineGroupLayout[],
+  ctx: SvgCtx,
 ): string {
-  const emitted = slices.map((slice) => emitLineGroup(packet, slice));
+  const emitted = slices.map((slice) => emitLineGroup(packet, slice, ctx));
   return joinSvgParts(
     ...emitted.map((slice) => slice.fieldSvg),
     ...emitted.map((slice) => slice.connectorSvg),
@@ -574,15 +605,26 @@ function svgUserUnit(value: number): string {
   return Number(value.toFixed(4)).toString();
 }
 
+function arrowMarker(ctx: SvgCtx): string {
+  const markerId = svgId(ctx.idPrefix, "pkt-arrow");
+  return `<defs><marker id="${escapeXml(markerId)}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="${ctx.colors.connector}"/></marker></defs>`;
+}
+
 function renderPageFromLayout(
   packet: NormalizedPacketDiagram,
   page: PacketPageLayout,
 ): RenderedSvgPage {
+  const ctx: SvgCtx = {
+    fonts: page.fonts,
+    fontFamily: page.fontFamily,
+    colors: t.colors,
+    idPrefix: page.idPrefix,
+  };
   const out: string[] = [];
   const header = page.header;
-  const svgId = page.idPrefix ? `${page.idPrefix}packet-p${page.pageIndex}` : undefined;
+  const rootId = page.idPrefix ? `${page.idPrefix}packet-p${page.pageIndex}` : undefined;
   const svgAttrs: Record<string, string | number | undefined> = {
-    id: svgId,
+    id: rootId,
     viewBox: `0 0 ${t.width} ${svgUserUnit(page.height)}`,
     role: "img",
     "aria-label": `${packet.title} page ${page.pageIndex}`,
@@ -596,40 +638,43 @@ function renderPageFromLayout(
   }
   out.push(`<svg xmlns="http://www.w3.org/2000/svg"${attr(svgAttrs)}>`);
   out.push(
-    `<style><![CDATA[.packet-diagram-svg text{font-family:${getPacketSvgFontFamily()};}]]></style>`,
+    `<style><![CDATA[.packet-diagram-svg text{font-family:${ctx.fontFamily};}]]></style>`,
   );
+  out.push(arrowMarker(ctx));
   out.push(
     rect(header.titleBox, {
-      fill: t.colors.titleBg,
-      stroke: t.colors.border,
+      fill: ctx.colors.titleBg,
+      stroke: ctx.colors.border,
       strokeWidth: t.borderWidth,
       rx: 4,
     }),
   );
   out.push(
     renderLines(header.titleLines, t.marginX + 14, header.titleBaselineY, {
-      size: t.fonts.title,
+      size: ctx.fonts.title,
       weight: 700,
-      fill: t.colors.text,
-      lineHeight: t.fonts.title * t.pageHeader.title.lineHeight,
+      fill: ctx.colors.text,
+      lineHeight: ctx.fonts.title * t.pageHeader.title.lineHeight,
+      fontFamily: ctx.fontFamily,
     }),
   );
   out.push(
     rect(header.metaBox, {
-      fill: t.colors.metaBg,
-      stroke: t.colors.border,
+      fill: ctx.colors.metaBg,
+      stroke: ctx.colors.border,
       strokeWidth: t.borderWidth,
     }),
   );
   if (packet.meta)
     out.push(
       renderLines(header.metaLines, t.marginX + 14, header.metaBaselineY, {
-        size: t.fonts.meta,
-        fill: t.colors.muted,
-        lineHeight: t.fonts.meta * t.pageHeader.meta.lineHeight,
+        size: ctx.fonts.meta,
+        fill: ctx.colors.muted,
+        lineHeight: ctx.fonts.meta * t.pageHeader.meta.lineHeight,
+        fontFamily: ctx.fontFamily,
       }),
     );
-  out.push(composePageLayers(packet, page.slices));
+  out.push(composePageLayers(packet, page.slices, ctx));
   out.push(`</svg>`);
   return {
     svg: out.join("\n"),
@@ -654,18 +699,9 @@ export function renderPacketPages(
   packet: NormalizedPacketDiagram,
   options: PacketSvgRenderOptions = {},
 ): RenderedSvgPage[] {
-  const savedFonts = applyPacketSvgFontSizeOverrides(options.fontSizes);
-  const previousFont = currentFontFamily;
-  currentFontFamily = validateCssFontFamily(
-    options.fontFamily?.trim() || DEFAULT_FONT,
-  );
-  try {
-    const pages = layoutPacketPagesRaw(packet, options);
-    return pages.map((page) => renderPageFromLayout(packet, page));
-  } finally {
-    currentFontFamily = previousFont;
-    restorePacketSvgFontSizes(savedFonts);
-  }
+  const theme = resolvePacketTheme(options);
+  const pages = layoutPacketPagesRaw(packet, { ...options, theme });
+  return pages.map((page) => renderPageFromLayout(packet, page));
 }
 
 export function renderPacketSvgParity(

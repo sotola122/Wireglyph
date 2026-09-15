@@ -6,18 +6,23 @@ import {
   PACKET_A4_BODY_WIDTH_MM,
   PACKET_PRINT_FONT_SCALE,
   PACKET_PT_PER_MM,
-  packetSvgEmittedFontSize,
 } from "./tokens.ts";
 import {
   minDetailColumns,
   computeAutoDetailRange,
   measureDetailPanel,
+  naturalDetailWidth,
 } from "./measure.ts";
 import {
   packetTextBlockHeight,
   wrapPacketText,
   textBoxWidth,
 } from "./text.ts";
+import {
+  resolvePacketTheme,
+  type PacketFontSizes,
+  type ResolvedPacketTheme,
+} from "./theme.ts";
 import type {
   Box,
   ByteRange,
@@ -36,6 +41,8 @@ export type PacketSvgRenderOptions = {
   idPrefix?: string;
   contentWidthMm?: number;
   contentHeightMm?: number;
+  minFontPt?: number;
+  theme?: ResolvedPacketTheme;
 };
 
 export type FieldTextLayout = {
@@ -67,7 +74,7 @@ export type PlacedFieldLayout = {
 
 export type ConnectorLayout = {
   readonly points: readonly Point[];
-  readonly kind: "dotted" | "dashed";
+  readonly kind: "solid" | "dotted" | "dashed";
 };
 
 export type DetailPanelPlacement = {
@@ -102,10 +109,9 @@ export type PacketPageLayout = {
   readonly standalone: boolean;
   readonly idPrefix: string;
   readonly contentWidthMm: number;
+  readonly fonts: PacketFontSizes;
+  readonly fontFamily: string;
 };
-
-const fontSizeOverrideKeys = new Set(Object.keys(t.fonts));
-const DEFAULT_FONT_SIZES: Record<string, number> = { ...t.fonts };
 
 export const PACKET_PAGE_BODY_BUDGET_PX =
   (PACKET_A4_BODY_HEIGHT_MM * PACKET_PT_PER_MM) * PACKET_PRINT_FONT_SCALE;
@@ -120,35 +126,6 @@ export function packetPageContentBudgetHeight(
   return Math.max(1, totalHeightUu - headerBodyStartY - bottomPadding);
 }
 
-function scalePacketFontSize(size: number): number {
-  return packetSvgEmittedFontSize(size);
-}
-
-export function restorePacketSvgFontSizes(saved: Record<string, number>): void {
-  for (const key of Object.keys(DEFAULT_FONT_SIZES)) {
-    (t.fonts as Record<string, number>)[key] = saved[key] ?? DEFAULT_FONT_SIZES[key];
-  }
-}
-
-export function applyPacketSvgFontSizeOverrides(
-  fontSizes?: Partial<Record<string, number>>,
-): Record<string, number> {
-  const saved: Record<string, number> = { ...t.fonts };
-  for (const key of Object.keys(DEFAULT_FONT_SIZES)) {
-    (t.fonts as Record<string, number>)[key] = scalePacketFontSize(
-      DEFAULT_FONT_SIZES[key],
-    );
-  }
-  if (!fontSizes) return saved;
-  for (const [key, value] of Object.entries(fontSizes)) {
-    if (!fontSizeOverrideKeys.has(key)) continue;
-    if (typeof value !== "number" || !Number.isFinite(value) || value <= 0)
-      continue;
-    (t.fonts as Record<string, number>)[key] = scalePacketFontSize(value);
-  }
-  return saved;
-}
-
 function wrapAtWidth(textValue: string, width: number, fontSize: number): string[] {
   return wrapPacketText(textValue, Math.max(width, 0), fontSize);
 }
@@ -157,17 +134,20 @@ function textBoundsHeight(fontSize: number): number {
   return fontSize * (1 + t.textMetrics.descent);
 }
 
-export function measurePageHeader(packet: NormalizedPacketDiagram): PageHeaderLayout {
+export function measurePageHeader(
+  packet: NormalizedPacketDiagram,
+  fonts: PacketFontSizes,
+): PageHeaderLayout {
   const textWidth = usableWidth() - 28;
-  const titleLines = wrapAtWidth(packet.title, textWidth, t.fonts.title);
-  const metaLines = wrapAtWidth(packet.meta ?? "", textWidth, t.fonts.meta);
+  const titleLines = wrapAtWidth(packet.title, textWidth, fonts.title);
+  const metaLines = wrapAtWidth(packet.meta ?? "", textWidth, fonts.meta);
   const titleHeight = Math.max(
     t.titleHeight,
     t.pageHeader.title.paddingTop +
       packetTextBlockHeight(
         titleLines,
-        t.fonts.title,
-        t.fonts.title * t.pageHeader.title.lineHeight,
+        fonts.title,
+        fonts.title * t.pageHeader.title.lineHeight,
       ) +
       t.pageHeader.title.paddingBottom,
   );
@@ -182,8 +162,8 @@ export function measurePageHeader(packet: NormalizedPacketDiagram): PageHeaderLa
     t.pageHeader.meta.paddingTop +
       packetTextBlockHeight(
         metaLines,
-        t.fonts.meta,
-        t.fonts.meta * t.pageHeader.meta.lineHeight,
+        fonts.meta,
+        fonts.meta * t.pageHeader.meta.lineHeight,
       ) +
       t.pageHeader.meta.paddingBottom,
   );
@@ -195,10 +175,10 @@ export function measurePageHeader(packet: NormalizedPacketDiagram): PageHeaderLa
   };
   return {
     titleBox,
-    titleBaselineY: titleBox.y + t.pageHeader.title.paddingTop + t.fonts.title,
+    titleBaselineY: titleBox.y + t.pageHeader.title.paddingTop + fonts.title,
     titleLines,
     metaBox,
-    metaBaselineY: metaBox.y + t.pageHeader.meta.paddingTop + t.fonts.meta,
+    metaBaselineY: metaBox.y + t.pageHeader.meta.paddingTop + fonts.meta,
     metaLines,
     bodyStartY: metaBox.y + metaBox.height + t.pageHeader.bodyGap,
   };
@@ -207,28 +187,29 @@ export function measurePageHeader(packet: NormalizedPacketDiagram): PageHeaderLa
 export function measureFieldTextLayout(
   field: NormalizedPacketField,
   width: number,
+  fonts: PacketFontSizes,
 ): FieldTextLayout {
-  const labelWidth = textBoxWidth(width, t.fonts.label, 10);
-  const labelLineHeight = t.fonts.label * t.fieldText.labelLineHeight;
-  const labelLines = wrapAtWidth(field.label, labelWidth, t.fonts.label);
+  const labelWidth = textBoxWidth(width, fonts.label, 10);
+  const labelLineHeight = fonts.label * t.fieldText.labelLineHeight;
+  const labelLines = wrapAtWidth(field.label, labelWidth, fonts.label);
   const labelBlockHeight = packetTextBlockHeight(
     labelLines,
-    t.fonts.label,
+    fonts.label,
     labelLineHeight,
   );
   const sizeTop =
     t.fieldText.paddingTop + labelBlockHeight + t.fieldText.gapAfterLabel;
-  const sizeBlockHeight = textBoundsHeight(t.fonts.size);
+  const sizeBlockHeight = textBoundsHeight(fonts.size);
   const valueLines = field.value
-    ? wrapAtWidth(field.value, labelWidth, t.fonts.value)
+    ? wrapAtWidth(field.value, labelWidth, fonts.value)
     : [];
-  const valueLineHeight = t.fonts.value * t.fieldText.labelLineHeight;
+  const valueLineHeight = fonts.value * t.fieldText.labelLineHeight;
   const valueBlockHeight = field.value
     ? t.fieldText.gapAfterSize +
-      packetTextBlockHeight(valueLines, t.fonts.value, valueLineHeight)
+      packetTextBlockHeight(valueLines, fonts.value, valueLineHeight)
     : 0;
   const valueBaselineOffset = field.value
-    ? sizeTop + sizeBlockHeight + t.fieldText.gapAfterSize + t.fonts.value
+    ? sizeTop + sizeBlockHeight + t.fieldText.gapAfterSize + fonts.value
     : undefined;
   const bottomReserve = field.detail
     ? Math.max(t.fieldText.paddingBottom, t.fieldText.detailBadgeReserve)
@@ -243,10 +224,10 @@ export function measureFieldTextLayout(
         valueBlockHeight +
         bottomReserve,
     ),
-    labelBaselineOffset: t.fieldText.paddingTop + t.fonts.label,
+    labelBaselineOffset: t.fieldText.paddingTop + fonts.label,
     labelLineHeight,
     labelLines,
-    sizeBaselineOffset: sizeTop + t.fonts.size,
+    sizeBaselineOffset: sizeTop + fonts.size,
     valueBaselineOffset,
     valueLines,
   };
@@ -326,6 +307,7 @@ export function layoutLineGroup(
     readonly count: number;
     readonly includeField?: boolean;
   },
+  fonts: PacketFontSizes = resolvePacketTheme().fonts,
 ): LineGroupLayout {
   const includeField = laneSlice?.includeField !== false;
   const rulerMode = packet.ruler ?? "field";
@@ -342,7 +324,7 @@ export function layoutLineGroup(
         height: t.wrapFieldRowHeight,
       });
       return [
-        { field, segment, text: measureFieldTextLayout(field, box.width) },
+        { field, segment, text: measureFieldTextLayout(field, box.width, fonts) },
       ];
     },
   );
@@ -407,9 +389,15 @@ export function layoutLineGroup(
         detailW = (expanded.end - expanded.start + 1) * colW;
       }
 
-      const rightEdge = detailX + detailW;
-      if (rightEdge > t.width) {
-        detailX = Math.max(t.marginX, detailX - (rightEdge - t.width));
+      const naturalW = naturalDetailWidth(
+        field.detail.bits,
+        field.detail.bitsView,
+        field.detail.bitsColumns,
+        fonts,
+      );
+      detailW = Math.max(detailW, naturalW);
+      if (detailX + detailW > t.width) {
+        detailW = Math.max(1, t.width - detailX);
       }
 
       const title =
@@ -423,6 +411,7 @@ export function layoutLineGroup(
         detailWidth: detailW,
         title,
         sourceLabel: formatRange(field.range),
+        fonts,
       });
       const sourceBox = fieldBoxInLine({
         range: field.range,
@@ -515,7 +504,11 @@ export function layoutLineGroup(
           connectorPoints.push(target);
           connectors.push({
             points: connectorPoints,
-            kind: panel.field.detail.connector,
+            kind:
+              panel.field.detail.connector === "dotted" ||
+              panel.field.detail.connector === "dashed"
+                ? panel.field.detail.connector
+                : "solid",
           });
         }
         panels.push({
@@ -552,12 +545,13 @@ function placeLineSlice(
   laneStart: number,
   count: number,
   includeField: boolean,
+  fonts: PacketFontSizes,
 ): LineGroupLayout {
   return layoutLineGroup(packet, lineStart, lineEnd, y, {
     start: laneStart,
     count,
     includeField,
-  });
+  }, fonts);
 }
 
 function pageByteRanges(slices: readonly LineGroupLayout[]): ByteRange[] {
@@ -571,25 +565,25 @@ export function layoutPacketPages(
   packet: NormalizedPacketDiagram,
   options: PacketSvgRenderOptions = {},
 ): PacketPageLayout[] {
-  const savedFonts = applyPacketSvgFontSizeOverrides(options.fontSizes);
-  try {
-    return layoutPacketPagesRaw(packet, options);
-  } finally {
-    restorePacketSvgFontSizes(savedFonts);
-  }
+  return layoutPacketPagesRaw(packet, {
+    ...options,
+    theme: options.theme ?? resolvePacketTheme(options),
+  });
 }
 
-/** Layout without font save/restore. Caller must apply packet font overrides. */
+/** Layout using a resolved per-call theme (no global font mutation). */
 export function layoutPacketPagesRaw(
   packet: NormalizedPacketDiagram,
   options: PacketSvgRenderOptions,
 ): PacketPageLayout[] {
+  const theme = options.theme ?? resolvePacketTheme(options);
+  const fonts = theme.fonts;
   const resolvedWidthMode: "available" | "fixed" = options.widthMode ?? "available";
   const standalone = options.standalone ?? false;
   const paginate = options.paginate ?? true;
   const wrap = typeof packet.wrap === "number" ? packet.wrap : packet.cols;
   const pageBottomPadding = 20;
-  const header = measurePageHeader(packet);
+  const header = measurePageHeader(packet, fonts);
   const pageBodyStartY = header.bodyStartY;
   const contentHeightMm = options.contentHeightMm ?? PACKET_A4_BODY_HEIGHT_MM;
   const contentWidthMm = options.contentWidthMm ?? PACKET_A4_BODY_WIDTH_MM;
@@ -606,7 +600,7 @@ export function layoutPacketPagesRaw(
 
   const flushPage = (): void => {
     pages.push({
-      header: measurePageHeader(packet),
+      header: measurePageHeader(packet, fonts),
       slices: pageBody,
       height: used + pageBottomPadding,
       pageIndex,
@@ -615,6 +609,8 @@ export function layoutPacketPagesRaw(
       standalone,
       idPrefix: options.idPrefix ?? "",
       contentWidthMm,
+      fonts,
+      fontFamily: theme.fontFamily,
     });
   };
 
@@ -645,6 +641,7 @@ export function layoutPacketPagesRaw(
         laneStart,
         count,
         includeField,
+        fonts,
       );
     }
     pageBody.push(next);
@@ -654,7 +651,7 @@ export function layoutPacketPagesRaw(
 
   for (let lineStart = 1; lineStart <= packet.cols; lineStart += wrap) {
     const lineEnd = Math.min(packet.cols, lineStart + wrap - 1);
-    const probe = layoutLineGroup(packet, lineStart, lineEnd, y);
+    const probe = layoutLineGroup(packet, lineStart, lineEnd, y, undefined, fonts);
     const totalLanes = probe.laneCount;
     if (totalLanes === 0) {
       if (paginate && probe.height > pageContentBudgetHeight) {
@@ -679,6 +676,7 @@ export function layoutPacketPagesRaw(
         includeField ? 0 : laneStart,
         count,
         includeField,
+        fonts,
       );
       while (
         paginate &&
@@ -694,6 +692,7 @@ export function layoutPacketPagesRaw(
           includeField ? 0 : laneStart,
           count,
           includeField,
+          fonts,
         );
       }
       if (paginate && placed.height > pageContentBudgetHeight) {

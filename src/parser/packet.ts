@@ -405,7 +405,7 @@ function applyFieldChild(
       field.detailRange = value;
       return true;
     case "connector":
-      field.connector = value as "dotted" | "dashed" | "none";
+      field.connector = value as "solid" | "dotted" | "dashed" | "none";
       return true;
     case "bitsColumns":
       field.bitsColumns = Number(value);

@@ -35,6 +35,9 @@ describe("wireglyph examples", () => {
         expect(svg).toContain("<svg");
         expect((svg.match(/<svg\b/g) ?? []).length).toBe(1);
         expect(svg).not.toContain("<script");
+        if (kind.dir === "packet" && rel.includes("tcp-header")) {
+          expect(svg).toContain("0x5012");
+        }
       });
     }
   }

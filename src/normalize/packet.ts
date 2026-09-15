@@ -171,10 +171,14 @@ function assignDetails(
 
     lineGroups[groupIndex].details.push(detail);
 
-    if (field.connector && field.connector !== "none") {
+    if (field.connector !== "none") {
+      const kind =
+        field.connector === "dotted" || field.connector === "dashed"
+          ? field.connector
+          : "solid";
       lineGroups[groupIndex].connector = {
         sourceRange: field.range,
-        kind: field.connector as "dotted" | "dashed",
+        kind,
       };
     }
   }

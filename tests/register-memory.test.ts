@@ -40,12 +40,14 @@ describe("register map DSL", () => {
     expect(parsed.ast.fields.find((field) => field.label === "ENABLE")?.range).toBe("B25-32");
   });
 
-  test("renders SVG", () => {
+  test("register fields show bit counts", () => {
     const svg = renderRegisterMapSVG(register);
     expect(svg).toContain("<svg");
     expect(svg).toContain("CTRL");
     expect(svg).toContain("ENABLE");
     expect((svg.match(/<svg\b/g) ?? []).length).toBe(1);
+    expect(svg).toContain("8 bits");
+    expect(svg).not.toContain(">8B</text>");
   });
 });
 
@@ -73,5 +75,18 @@ describe("memory map DSL", () => {
     expect(svg).toContain("SoC map");
     expect(svg).toContain("Flash");
     expect(svg).toMatch(/MMI/);
+  });
+
+  test("large regions use KiB/MiB size labels instead of packet NB", () => {
+    const source = `memorymap
+title: Flash
+cols: 8
+[0x00000000-0x003FFFFF] App flash @data role=mem
+[0x00400000-0x00403FFF] NVS @note role=nvs
+`;
+    const svg = renderMemoryMapSVG(source);
+    expect(svg).toContain("4 MiB");
+    expect(svg).toContain("16 KiB");
+    expect(svg).not.toContain(">2B</text>");
   });
 });

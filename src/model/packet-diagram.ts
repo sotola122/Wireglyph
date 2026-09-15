@@ -1,4 +1,4 @@
-export type ConnectorKind = "dotted" | "dashed" | "none";
+export type ConnectorKind = "solid" | "dotted" | "dashed" | "none";
 export type BitsView = "compact" | "detail" | "stack" | "grid" | "none";
 export type PresetName =
   | "accent"
@@ -39,6 +39,8 @@ export interface NormalizedPacketField {
   range: ByteRange;
   label: string;
   value?: string;
+  /** Display size (memory map KiB/MiB, register bits). Packet DSL omits this and uses `NB`. */
+  sizeLabel?: string;
   preset: PresetName;
   role: string;
   detail?: NormalizedPacketDetail;

@@ -18,6 +18,10 @@ function stripKindHeader(source: string): string {
   return source.replace(/^\s*register(?:map)?[ \t]*\r?\n/i, "");
 }
 
+function bitSizeLabel(bits: number): string {
+  return bits === 1 ? "1 bit" : `${bits} bits`;
+}
+
 function parseRange(range: string): { start: number; end: number } {
   const match = range.match(/^B(\d+)(?:-(\d+))?$/i);
   const start = Number(match?.[1] ?? 0);
@@ -45,6 +49,7 @@ function fillReservedGaps(
         label: "Reserved",
         preset: "muted",
         role: "rsvd",
+        sizeLabel: bitSizeLabel(start - next),
       });
     }
     filled.push(field);
@@ -57,6 +62,7 @@ function fillReservedGaps(
       label: "Reserved",
       preset: "muted",
       role: "rsvd",
+      sizeLabel: bitSizeLabel(width - next + 1),
     });
   }
   return filled;
@@ -137,6 +143,7 @@ export function parseRegisterMapDSL(
       label,
       preset,
       role,
+      sizeLabel: bitSizeLabel(end - start + 1),
     };
     if (value !== undefined) field.value = value;
     fields.push(field);

@@ -264,7 +264,7 @@ export function validatePacketAst(
 
   // ── 12. Connector validation (PKT_E312) ─────────────────────────────
 
-  const VALID_CONNECTORS = new Set(["dotted", "dashed", "none"]);
+  const VALID_CONNECTORS = new Set(["solid", "dotted", "dashed", "none"]);
 
   for (const field of ast.fields) {
     if (
@@ -276,7 +276,7 @@ export function validatePacketAst(
           DiagnosticCodes.INVALID_CONNECTOR,
           blockIndex,
           field.sourcePosition.line,
-          `Invalid connector "${field.connector}" — must be one of: dotted, dashed, none`,
+          `Invalid connector "${field.connector}" — must be one of: solid, dotted, dashed, none`,
         ),
       );
     }

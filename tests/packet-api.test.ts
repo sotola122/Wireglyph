@@ -64,6 +64,15 @@ Byte1: Flags
     expect(a).toContain("FontA");
   });
 
+  test("A then B then A fontSizes do not leak", () => {
+    const a = renderPacketSVG(basic, { fontSizes: { title: 18 } });
+    renderPacketSVG(basic, { fontSizes: { title: 10 } });
+    const aAgain = renderPacketSVG(basic, { fontSizes: { title: 18 } });
+    expect(a).toBe(aAgain);
+    const b = renderPacketSVG(basic, { fontSizes: { title: 10 } });
+    expect(b).not.toBe(a);
+  });
+
   test("distinct idPrefix values do not collide", () => {
     expect(svgId("a-", "title")).toBe("a-title");
     expect(svgId("b-", "title")).toBe("b-title");

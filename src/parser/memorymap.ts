@@ -29,6 +29,15 @@ function parseAddr(value: string): number {
     : Number.parseInt(value, 10);
 }
 
+function formatAddressSpan(start: number, end: number): string {
+  const bytes = end - start + 1;
+  const mib = 1024 * 1024;
+  const kib = 1024;
+  if (bytes >= mib && bytes % mib === 0) return `${bytes / mib} MiB`;
+  if (bytes >= kib && bytes % kib === 0) return `${bytes / kib} KiB`;
+  return `${bytes} B`;
+}
+
 function stripKindHeader(source: string): string {
   return source.replace(/^\s*memory[-_]?map[ \t]*\r?\n/i, "");
 }
@@ -145,6 +154,7 @@ export function parseMemoryMapDSL(
       value: `0x${region.start.toString(16)}-0x${region.end.toString(16)}`,
       preset: region.preset,
       role: region.role,
+      sizeLabel: formatAddressSpan(region.start, region.end),
     };
     return field;
   });

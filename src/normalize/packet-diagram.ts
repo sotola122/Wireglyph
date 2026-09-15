@@ -28,8 +28,10 @@ function toBitsView(kind: string | undefined): BitsView {
 }
 
 function toConnectorKind(kind: string | undefined): ConnectorKind {
-  if (kind === "dotted" || kind === "dashed") return kind;
-  return "none";
+  if (kind === "dotted" || kind === "dashed" || kind === "none" || kind === "solid") {
+    return kind;
+  }
+  return "solid";
 }
 
 function toPresetName(presetName: string): PresetName {
@@ -172,6 +174,7 @@ export function adaptToNormalizedPacketDiagram(
       range,
       label: field.label,
       value: field.value,
+      sizeLabel: field.sizeLabel,
       preset: toPresetName(field.preset),
       role: field.role,
       detail,
