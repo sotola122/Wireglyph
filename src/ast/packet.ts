@@ -28,6 +28,12 @@ export interface PacketDSLAst {
   wrap?: number | "none";
   /** Ruler style: field-level, byte-level, or none */
   ruler?: "field" | "byte" | "none";
+  /**
+   * Column numbering used by the ruler. `'byte'` (the default) labels packet
+   * ranges as `B1-4`; `'bit'` labels register ranges as `7:0`, with the
+   * leftmost column as the most significant bit.
+   */
+  numbering?: "byte" | "bit";
   /** Diagram renderer identifier (e.g. `'svg-parity'`) */
   diagramRenderer?: string;
   /** Named presets for styling */

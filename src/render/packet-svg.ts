@@ -27,6 +27,7 @@ import {
   packetPageContentBudgetHeight,
   rangeSize,
   type ConnectorLayout,
+  type FieldCalloutLayout,
   type FieldTextLayout,
   type LineGroupLayout,
   type PacketPageLayout,
@@ -121,7 +122,7 @@ function renderLines(
 const polyline = (
   points: readonly Point[],
   kind: "solid" | "dotted" | "dashed",
-  markerId: string,
+  markerId?: string,
 ): string => {
   const dash =
     kind === "dashed"
@@ -137,7 +138,7 @@ const polyline = (
     "stroke-dasharray": dash,
     "stroke-linecap": "round",
     "stroke-linejoin": "round",
-    "marker-end": `url(#${markerId})`,
+    "marker-end": markerId ? `url(#${markerId})` : undefined,
   })} data-connector-kind="${kind}"/>`;
 };
 
@@ -206,25 +207,26 @@ function renderField(input: {
       },
     ),
   );
-  out.push(
-    text(
-      box.x + box.width / 2,
-      box.y + layout.sizeBaselineOffset,
-      field.sizeLabel ?? rangeSize(sourceRange),
-      {
-        size: ctx.fonts.size,
-        fill: ctx.colors.muted,
-        anchor: "middle",
-        fontFamily: ctx.fontFamily,
-      },
-    ),
-  );
+  if (layout.sizeBaselineOffset !== undefined)
+    out.push(
+      text(
+        box.x + box.width / 2,
+        box.y + layout.sizeBaselineOffset,
+        field.sizeLabel ?? rangeSize(sourceRange),
+        {
+          size: ctx.fonts.size,
+          fill: ctx.colors.muted,
+          anchor: "middle",
+          fontFamily: ctx.fontFamily,
+        },
+      ),
+    );
   if (field.value)
     out.push(
       renderLines(
         layout.valueLines,
         box.x + box.width / 2,
-        box.y + (layout.valueBaselineOffset ?? layout.sizeBaselineOffset),
+        box.y + (layout.valueBaselineOffset ?? layout.sizeBaselineOffset ?? layout.labelBaselineOffset),
         {
           size: layout.valueFontSize,
           fill: ctx.colors.text,
@@ -235,6 +237,21 @@ function renderField(input: {
       ),
     );
   return out.join("\n");
+}
+
+/**
+ * Ruler label for a column segment. Packet diagrams label byte ranges
+ * (`B1-4`); register maps label the bit range, most significant bit first
+ * (`7:0`, or `7` for a single bit).
+ */
+function formatRulerLabel(
+  segment: ByteRange,
+  packet: NormalizedPacketDiagram,
+): string {
+  if (packet.numbering !== "bit") return formatRange(segment);
+  const msb = packet.cols - segment.start;
+  const lsb = packet.cols - segment.end;
+  return msb === lsb ? `${msb}` : `${msb}:${lsb}`;
 }
 
 function renderRuler(
@@ -283,13 +300,18 @@ function renderRuler(
         ),
       );
       out.push(
-        text(segX + segWidth / 2, y + 15, formatRange(segment), {
-          size: ctx.fonts.ruler,
-          weight: 700,
-          fill: ctx.colors.text,
-          anchor: "middle",
-          fontFamily: ctx.fontFamily,
-        }),
+        text(
+          segX + segWidth / 2,
+          y + 15,
+          formatRulerLabel(segment, packet),
+          {
+            size: ctx.fonts.ruler,
+            weight: 700,
+            fill: ctx.colors.text,
+            anchor: "middle",
+            fontFamily: ctx.fontFamily,
+          },
+        ),
       );
     }
   } else if (rulerMode === "byte") {
@@ -552,6 +574,18 @@ function emitConnector(connector: ConnectorLayout, markerId: string): string {
   return polyline(connector.points, connector.kind, markerId);
 }
 
+function emitCallout(callout: FieldCalloutLayout, ctx: SvgCtx): string {
+  return [
+    polyline(callout.leader, "dotted", undefined),
+    text(callout.x, callout.baselineY, callout.text, {
+      size: callout.fontSize,
+      fill: ctx.colors.text,
+      anchor: "middle",
+      fontFamily: ctx.fontFamily,
+    }),
+  ].join("\n");
+}
+
 function emitLineGroup(
   packet: NormalizedPacketDiagram,
   group: LineGroupLayout,
@@ -578,12 +612,13 @@ function emitLineGroup(
   const connectorOut = group.connectors.map((connector) =>
     emitConnector(connector, markerId),
   );
+  const calloutOut = group.callouts.map((callout) => emitCallout(callout, ctx));
   const panelOut = group.panels.map((panel) =>
     renderDetailPanel(panel.field, panel.x, panel.y, panel.width, panel.measure, ctx),
   );
   return {
     fieldSvg: fieldOut.join("\n"),
-    connectorSvg: connectorOut.join("\n"),
+    connectorSvg: [...calloutOut, ...connectorOut].join("\n"),
     panelSvg: panelOut.join("\n"),
   };
 }

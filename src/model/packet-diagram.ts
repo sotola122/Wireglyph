@@ -31,6 +31,8 @@ export interface NormalizedPacketDiagram {
   cols: number;
   wrap?: number | "none";
   ruler?: "field" | "byte" | "none";
+  /** Ruler numbering: packet byte ranges (`B1-4`) or register bit ranges (`7:0`). */
+  numbering?: "byte" | "bit";
   diagramRenderer?: "svg-parity";
   fields: NormalizedPacketField[];
 }

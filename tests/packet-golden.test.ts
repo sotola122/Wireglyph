@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -12,7 +12,15 @@ import {
 import type { PacketSvgRenderOptions } from "../src/index.ts";
 
 const root = dirname(fileURLToPath(import.meta.url));
-const goldenRoot = "/tmp/golden/packet";
+
+/**
+ * Golden SVGs are byte-for-byte render output, so they live outside the
+ * repository and the suite reports an explicit skip when they are absent.
+ * Generate them with `UPDATE_PACKET_GOLDEN=1 npx vitest run tests/packet-golden.test.ts`,
+ * then re-run without the variable to compare.
+ */
+const goldenRoot = process.env.PACKET_GOLDEN_ROOT ?? "/tmp/golden/packet";
+const updating = process.env.UPDATE_PACKET_GOLDEN === "1";
 
 const modes: Record<string, PacketSvgRenderOptions> = {
   "available-single": {
@@ -56,42 +64,60 @@ function compile(source: string) {
   return adaptToNormalizedPacketDiagram(normalizePacket(parsed.ast, diagnostics));
 }
 
-function goldenCases(kind: "packet" | "packet-wrap"): { name: string; source: string; goldenDir: string }[] {
+function fixtures(kind: "packet" | "packet-wrap"): { name: string; source: string }[] {
   const fixtureDir = join(root, "fixtures", kind);
-  const files = readdirSync(fixtureDir).filter((name) => name.endsWith(".packet"));
-  return files.flatMap((file) => {
-    const name = file.replace(/\.packet$/, "");
-    const goldenDir = join(goldenRoot, kind, name);
-    if (!existsSync(goldenDir)) return [];
-    return [
-      {
-        name,
-        source: readFileSync(join(fixtureDir, file), "utf8"),
-        goldenDir,
-      },
-    ];
-  });
+  return readdirSync(fixtureDir)
+    .filter((name) => name.endsWith(".packet"))
+    .sort()
+    .map((file) => ({
+      name: file.replace(/\.packet$/, ""),
+      source: readFileSync(join(fixtureDir, file), "utf8"),
+    }))
+    // Fixtures that fail validation are asserted by the diagnostic suites and
+    // have no rendered output to compare against.
+    .filter((fixture) => {
+      try {
+        compile(fixture.source);
+        return true;
+      } catch {
+        return false;
+      }
+    });
 }
 
-describe("packet SVG golden byte-match", () => {
-  for (const kind of ["packet", "packet-wrap"] as const) {
-    for (const fixture of goldenCases(kind)) {
-      for (const [mode, options] of Object.entries(modes)) {
-        const modeDir = join(fixture.goldenDir, mode);
-        if (!existsSync(modeDir)) continue;
-        test(`${kind}/${fixture.name}/${mode}`, () => {
-          const diagram = compile(fixture.source);
-          const pages = renderPacketPages(diagram, options);
-          for (const page of pages) {
-            const expectedPath = join(modeDir, `page-${page.pageIndex}.svg`);
-            expect(existsSync(expectedPath), expectedPath).toBe(true);
-            const expected = readFileSync(expectedPath, "utf8");
-            expect(page.svg).toBe(expected);
-          }
-          const extra = readdirSync(modeDir).filter((name) => name.endsWith(".svg"));
-          expect(extra).toHaveLength(pages.length);
-        });
+// `updating` writes goldens, so it must run even when none exist yet.
+describe.skipIf(!updating && !existsSync(goldenRoot))(
+  `packet SVG golden byte-match (${goldenRoot})`,
+  () => {
+    for (const kind of ["packet", "packet-wrap"] as const) {
+      for (const fixture of fixtures(kind)) {
+        for (const [mode, options] of Object.entries(modes)) {
+          const modeDir = join(goldenRoot, kind, fixture.name, mode);
+          if (!updating && !existsSync(modeDir)) continue;
+          test(`${kind}/${fixture.name}/${mode}`, () => {
+            const diagram = compile(fixture.source);
+            const pages = renderPacketPages(diagram, options);
+            if (updating) {
+              mkdirSync(modeDir, { recursive: true });
+              for (const page of pages) {
+                writeFileSync(join(modeDir, `page-${page.pageIndex}.svg`), page.svg);
+              }
+              return;
+            }
+            for (const page of pages) {
+              const expectedPath = join(modeDir, `page-${page.pageIndex}.svg`);
+              expect(existsSync(expectedPath), expectedPath).toBe(true);
+              expect(page.svg).toBe(readFileSync(expectedPath, "utf8"));
+            }
+            const extra = readdirSync(modeDir).filter((name) => name.endsWith(".svg"));
+            expect(extra).toHaveLength(pages.length);
+          });
+        }
       }
     }
-  }
-});
+  },
+);
+
+if (!updating && !existsSync(goldenRoot)) {
+  test.skip(`packet SVG goldens absent at ${goldenRoot}`, () => {});
+}

@@ -187,6 +187,7 @@ export function adaptToNormalizedPacketDiagram(
     cols: ast.cols,
     wrap: ast.wrap,
     ruler: ast.ruler as "field" | "byte" | "none" | undefined,
+    numbering: ast.numbering === "bit" ? "bit" : undefined,
     diagramRenderer:
       ast.diagramRenderer === "svg-parity" ? "svg-parity" : undefined,
     fields,

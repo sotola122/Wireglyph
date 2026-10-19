@@ -169,6 +169,7 @@ export function parseRegisterMapDSL(
     cols: width,
     wrap: "none",
     ruler: "field",
+    numbering: "bit",
     diagramRenderer: "svg-parity",
     fields: filled,
   };

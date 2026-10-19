@@ -18,6 +18,7 @@ import {
   wrapPacketText,
   textBoxWidth,
   fitThenWrap,
+  measureTextWidth,
 } from "./text.ts";
 import {
   resolvePacketTheme,
@@ -52,7 +53,10 @@ export type FieldTextLayout = {
   readonly labelLineHeight: number;
   readonly labelFontSize: number;
   readonly labelLines: readonly string[];
-  readonly sizeBaselineOffset: number;
+  /** True when the label was moved to a callout under the row. */
+  readonly externalLabel: boolean;
+  /** Undefined when the cell is too narrow for its own size caption. */
+  readonly sizeBaselineOffset: number | undefined;
   readonly valueBaselineOffset: number | undefined;
   readonly valueFontSize: number;
   readonly valueLines: readonly string[];
@@ -88,6 +92,21 @@ export type DetailPanelPlacement = {
   readonly measure: DetailPanelMeasure;
 };
 
+/**
+ * Full field name for a cell too narrow to hold it, placed under the field row
+ * with a leader back to the cell so the bit range stays identifiable.
+ */
+export type FieldCalloutLayout = {
+  readonly field: NormalizedPacketField;
+  readonly text: string;
+  readonly fontSize: number;
+  /** Text centre x. */
+  readonly x: number;
+  readonly baselineY: number;
+  /** Leader polyline from the cell bottom edge to the text top. */
+  readonly leader: readonly Point[];
+};
+
 export type LineGroupLayout = {
   readonly includeField: boolean;
   readonly rulerMode: "field" | "byte" | "none";
@@ -98,6 +117,7 @@ export type LineGroupLayout = {
   readonly fields: readonly PlacedFieldLayout[];
   readonly connectors: readonly ConnectorLayout[];
   readonly panels: readonly DetailPanelPlacement[];
+  readonly callouts: readonly FieldCalloutLayout[];
   readonly height: number;
   readonly laneCount: number;
 };
@@ -192,25 +212,39 @@ export function measureFieldTextLayout(
   width: number,
   fonts: PacketFontSizes,
   minFontFloor = fonts.label,
+  sizeLabel = field.sizeLabel ?? "",
 ): FieldTextLayout {
   const labelWidth = textBoxWidth(width, fonts.label, 10);
+  // A label that would need wrapping at the smallest readable size still stays
+  // in the cell when the cell is wide enough to show a usable fragment. Below
+  // roughly four characters per line the wrapped label stops being readable
+  // (`RXNEIE` becomes `RX`/`NE`/`IE`), so the full name moves to a callout
+  // under the row, with a leader back to the bit range.
+  const floorCharsPerLine = labelWidth / Math.max(1e-6, minFontFloor * 0.62);
+  const externalLabel =
+    field.label.trim().length > 0 &&
+    measureTextWidth(field.label, minFontFloor) > labelWidth &&
+    floorCharsPerLine < 4;
   const fittedLabel = fitThenWrap(
     field.label,
     labelWidth,
     fonts.label,
     minFontFloor,
   );
-  const labelFontSize = fittedLabel.fontSize;
+  const labelFontSize = externalLabel ? minFontFloor : fittedLabel.fontSize;
   const labelLineHeight = labelFontSize * t.fieldText.labelLineHeight;
-  const labelLines = fittedLabel.lines;
-  const labelBlockHeight = packetTextBlockHeight(
-    labelLines,
-    labelFontSize,
-    labelLineHeight,
-  );
+  const labelLines = externalLabel ? [] : fittedLabel.lines;
+  const labelBlockHeight = externalLabel
+    ? 0
+    : packetTextBlockHeight(labelLines, labelFontSize, labelLineHeight);
   const sizeTop =
     t.fieldText.paddingTop + labelBlockHeight + t.fieldText.gapAfterLabel;
-  const sizeBlockHeight = textBoundsHeight(fonts.size);
+  // A cell narrower than its own size caption would spill the caption into the
+  // neighbouring cell; the ruler already states the width, so drop it instead.
+  const showSize =
+    sizeLabel.length > 0 &&
+    measureTextWidth(sizeLabel, fonts.size) <= textBoxWidth(width, fonts.size, 10);
+  const sizeBlockHeight = showSize ? textBoundsHeight(fonts.size) : 0;
   const valueWidth = textBoxWidth(width, fonts.value, 10);
   const valueLines = field.value
     ? wrapAtWidth(field.value, valueWidth, fonts.value)
@@ -240,7 +274,8 @@ export function measureFieldTextLayout(
     labelLineHeight,
     labelFontSize,
     labelLines,
-    sizeBaselineOffset: sizeTop + fonts.size,
+    externalLabel,
+    sizeBaselineOffset: showSize ? sizeTop + fonts.size : undefined,
     valueBaselineOffset,
     valueFontSize: fonts.value,
     valueLines,
@@ -342,7 +377,13 @@ export function layoutLineGroup(
         {
           field,
           segment,
-          text: measureFieldTextLayout(field, box.width, fonts, minFontFloor),
+          text: measureFieldTextLayout(
+            field,
+            box.width,
+            fonts,
+            minFontFloor,
+            field.sizeLabel ?? rangeSize(segment),
+          ),
         },
       ];
     },
@@ -371,6 +412,10 @@ export function layoutLineGroup(
   let laneCount = 0;
   const connectors: ConnectorLayout[] = [];
   const panels: DetailPanelPlacement[] = [];
+  const callouts = includeField
+    ? layoutFieldCallouts(fields, fieldY + fieldRowHeight, fonts, groupHeight)
+    : { callouts: [] as FieldCalloutLayout[], height: groupHeight };
+  groupHeight = callouts.height;
   if (details.length > 0) {
     type PanelInfo = {
       field: NormalizedPacketField;
@@ -551,8 +596,77 @@ export function layoutLineGroup(
     fields,
     connectors,
     panels,
+    callouts: callouts.callouts,
     height: groupHeight,
     laneCount,
+  };
+}
+
+const CALLOUT_TEXT_GAP = 18;
+const CALLOUT_ROW_GAP = 8;
+const CALLOUT_LEADER_GAP = 28;
+
+/**
+ * Pack the external labels of a line group into rows under the field row and
+ * give each one a leader back to its cell. Every callout keeps the complete
+ * field name; only cells that cannot show it participate.
+ */
+function layoutFieldCallouts(
+  fields: readonly PlacedFieldLayout[],
+  rowBottom: number,
+  fonts: PacketFontSizes,
+  baseHeight: number,
+): { callouts: FieldCalloutLayout[]; height: number } {
+  const entries = fields
+    .filter((entry) => entry.text.externalLabel)
+    .sort((a, b) => a.box.x - b.box.x);
+  if (entries.length === 0) return { callouts: [], height: baseHeight };
+
+  const fontSize = fonts.size;
+  const rowHeight = fontSize * 1.25 + CALLOUT_ROW_GAP;
+  const left = t.marginX;
+  const right = t.marginX + usableWidth();
+  const callouts: FieldCalloutLayout[] = [];
+  let x: number = left;
+  let row = 0;
+  let freshRow = true;
+  entries.forEach((entry, index) => {
+    const textWidth = measureTextWidth(entry.field.label, fontSize);
+    const boxWidth = Math.min(textWidth, right - left);
+    const targetX = entry.box.x + entry.box.width / 2;
+    const clampLeft = (value: number): number =>
+      Math.min(Math.max(value, left), right - boxWidth);
+    // Start each row under the cell it belongs to; keep leaders short.
+    if (freshRow) {
+      x = clampLeft(targetX - boxWidth / 2);
+      freshRow = false;
+    } else if (x + boxWidth > right) {
+      row += 1;
+      x = clampLeft(targetX - boxWidth / 2);
+    }
+    const centreX = x + boxWidth / 2;
+    const baselineY = rowBottom + CALLOUT_LEADER_GAP + row * rowHeight + fontSize;
+    const textTop = baselineY - fontSize;
+    // Stagger the elbow so neighbouring leaders stay visually separate.
+    const elbowY = rowBottom + 6 + (index % 4) * 6;
+    callouts.push({
+      field: entry.field,
+      text: entry.field.label,
+      fontSize,
+      x: centreX,
+      baselineY,
+      leader: [
+        { x: targetX, y: rowBottom },
+        { x: targetX, y: elbowY },
+        { x: centreX, y: elbowY },
+        { x: centreX, y: textTop },
+      ],
+    });
+    x += boxWidth + CALLOUT_TEXT_GAP;
+  });
+  return {
+    callouts,
+    height: baseHeight + CALLOUT_LEADER_GAP + (row + 1) * rowHeight,
   };
 }
 

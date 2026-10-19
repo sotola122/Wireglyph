@@ -58,6 +58,14 @@ offset: 0x00
 import { parseRegisterMapDSL, renderRegisterMapSVG } from "@sotola122/wireglyph";
 ```
 
+The ruler shows register bit numbers, most significant bit first (`31:16`,
+`15:8`, `7:0`), not packet byte ranges. Every cell fits its label by shrinking
+toward the minimum font and then wrapping; when a cell is too narrow for even a
+readable fragment (fewer than four characters per line at the font floor), the
+full field name moves to a callout under the row and a leader line keeps it
+attached to the bit range. A size caption that cannot fit its own cell is
+dropped rather than spilled into the neighbouring cell.
+
 ## Memory map
 
 Address regions are scaled onto a fixed column count (default 16).

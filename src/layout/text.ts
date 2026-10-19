@@ -1,5 +1,37 @@
-const ASCII_EM = 0.6;
+/**
+ * Advance widths in em for code points 0x20–0x7e.
+ *
+ * Measured in Chromium at weight 700 against `Noto Sans CJK JP`, the first
+ * family of the default packet font stack, then padded by ~6% so the estimate
+ * is an upper bound for the rendered run. Fit-then-wrap and every containment
+ * check derive their geometry from this estimate, so under-reporting here is
+ * what lets a label spill into the neighbouring cell.
+ *
+ * A flat 0.6em per ASCII character under-reports uppercase (measured average
+ * 0.64em, up to 0.92em for `M`/`W`) and is the root cause of the register and
+ * packet label collisions.
+ */
+const ASCII_EM_TABLE: readonly number[] = [
+  0.300, 0.392, 0.612, 0.625, 0.625, 1.021, 0.784, 0.346, 0.401, 0.401,
+  0.537, 0.625, 0.345, 0.392, 0.345, 0.410, 0.625, 0.625, 0.625, 0.625,
+  0.625, 0.625, 0.625, 0.625, 0.625, 0.625, 0.345, 0.345, 0.625, 0.625,
+  0.625, 0.545, 1.067, 0.680, 0.722, 0.695, 0.757, 0.652, 0.620, 0.760,
+  0.802, 0.350, 0.602, 0.727, 0.613, 0.904, 0.794, 0.816, 0.707, 0.816,
+  0.723, 0.662, 0.663, 0.793, 0.656, 0.970, 0.665, 0.615, 0.650, 0.401,
+  0.410, 0.401, 0.625, 0.601, 0.664, 0.627, 0.683, 0.559, 0.683, 0.616,
+  0.394, 0.633, 0.678, 0.322, 0.324, 0.640, 0.334, 1.022, 0.680, 0.664,
+  0.683, 0.683, 0.462, 0.525, 0.446, 0.675, 0.611, 0.915, 0.596, 0.609,
+  0.542, 0.401, 0.314, 0.401, 0.625,
+];
+
 const WIDE_EM = 1.0;
+/** Non-ASCII glyphs without a measured advance (accented Latin, Greek, …). */
+const FALLBACK_EM = 0.72;
+
+function glyphEm(code: number): number {
+  if (code >= 0x20 && code <= 0x7e) return ASCII_EM_TABLE[code - 0x20] ?? FALLBACK_EM;
+  return isWideGlyph(code) ? WIDE_EM : FALLBACK_EM;
+}
 
 /** East_Asian_Width-style wide glyphs (CJK, Hangul, kana, fullwidth, emoji). */
 function isWideGlyph(code: number): boolean {
@@ -20,14 +52,16 @@ function isWideGlyph(code: number): boolean {
 export function measureTextWidth(text: string, fontSize: number): number {
   let em = 0;
   for (const char of text) {
-    const code = char.codePointAt(0) ?? 0;
-    em += isWideGlyph(code) ? WIDE_EM : ASCII_EM;
+    em += glyphEm(char.codePointAt(0) ?? 0);
   }
   return em * fontSize;
 }
 
+/** Narrowest advance the estimator will ever assign, used as the glyph floor. */
+const MIN_GLYPH_EM = 0.6;
+
 function minGlyphWidth(fontSize: number): number {
-  return ASCII_EM * fontSize;
+  return MIN_GLYPH_EM * fontSize;
 }
 
 function tokenizePacketText(text: string): string[] {
