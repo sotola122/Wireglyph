@@ -65,16 +65,20 @@ export const svgParityTokens = {
   connectorStrokeWidth: 1.2,
   connectorDotted: "6 6",
   connectorDashed: "10 6",
+  // Authored points; PACKET_PRINT_FONT_SCALE makes 1 authored point print as
+  // 1pt on A4. The values sit just below a 10.5pt body so an inline diagram
+  // does not read as a callout: a bold 12pt field label outranks the prose it
+  // describes.
   fonts: {
-    title: 15,
-    meta: 10,
-    ruler: 8,
-    label: 12,
-    size: 9,
-    value: 9,
-    detailTitle: 12,
+    title: 12,
+    meta: 8.5,
+    ruler: 7.5,
+    label: 9.5,
+    size: 8,
+    value: 8.5,
+    detailTitle: 10,
     detailBody: 8,
-    detailStack: 10,
+    detailStack: 8.5,
     badge: 8,
   },
   textMetrics: {
