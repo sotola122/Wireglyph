@@ -268,7 +268,7 @@ function renderRuler(
   out.push(
     rect(
       { x: t.marginX, y, width: usableWidth(), height: t.rulerHeight },
-      { fill: "#ffffff", stroke: t.colors.border, strokeWidth: t.borderWidth },
+      { fill: "#ffffff", stroke: ctx.colors.border, strokeWidth: t.borderWidth },
     ),
   );
   if (rulerMode !== "field") {
@@ -277,7 +277,7 @@ function renderRuler(
         line(
           { x: t.marginX + i * colW, y },
           { x: t.marginX + i * colW, y: y + t.rulerHeight },
-          { stroke: t.colors.border, strokeWidth: 1 },
+          { stroke: ctx.colors.border, strokeWidth: 1 },
         ),
       );
   }
@@ -296,7 +296,7 @@ function renderRuler(
         line(
           { x: segX, y },
           { x: segX, y: y + t.rulerHeight },
-          { stroke: t.colors.borderStrong, strokeWidth: 1.2 },
+          { stroke: ctx.colors.borderStrong, strokeWidth: 1.2 },
         ),
       );
       out.push(
@@ -349,8 +349,8 @@ function renderDetailPanel(
     rect(
       { x, y, width, height },
       {
-        fill: t.colors.detailBg,
-        stroke: t.colors.borderStrong,
+        fill: ctx.colors.detailBg,
+        stroke: ctx.colors.borderStrong,
         strokeWidth: t.borderStrongWidth,
         rx: 6,
         class: "detail-panel",
@@ -361,8 +361,8 @@ function renderDetailPanel(
     rect(
       { x, y, width, height: headerHeight },
       {
-        fill: t.colors.detailHeaderBg,
-        stroke: t.colors.borderStrong,
+        fill: ctx.colors.detailHeaderBg,
+        stroke: ctx.colors.borderStrong,
         strokeWidth: t.borderWidth,
         rx: 6,
       },
@@ -372,7 +372,7 @@ function renderDetailPanel(
     line(
       { x, y: y + headerHeight },
       { x: x + width, y: y + headerHeight },
-      { stroke: t.colors.borderStrong, strokeWidth: t.borderWidth },
+      { stroke: ctx.colors.borderStrong, strokeWidth: t.borderWidth },
     ),
   );
 
@@ -384,7 +384,7 @@ function renderDetailPanel(
     renderLines(measure.titleLines, x + 14, y + measure.titleBaselineOffset, {
       size: ctx.fonts.detailTitle,
       weight: 700,
-      fill: t.colors.accent,
+      fill: ctx.colors.accent,
       lineHeight: ctx.fonts.detailTitle * 1.25,
       fontFamily: ctx.fontFamily,
     }),
@@ -409,7 +409,7 @@ function renderDetailPanel(
   out.push(
     rect(body, {
       fill: "#ffffff",
-      stroke: t.colors.grid,
+      stroke: ctx.colors.grid,
       strokeWidth: t.borderWidth,
     }),
   );
@@ -424,14 +424,14 @@ function renderDetailPanel(
       line(
         { x: body.x + c1, y: body.y },
         { x: body.x + c1, y: body.y + body.height },
-        { stroke: t.colors.grid, strokeWidth: 1 },
+        { stroke: ctx.colors.grid, strokeWidth: 1 },
       ),
     );
     out.push(
       line(
         { x: body.x + c1 + c2, y: body.y },
         { x: body.x + c1 + c2, y: body.y + body.height },
-        { stroke: t.colors.grid, strokeWidth: 1 },
+        { stroke: ctx.colors.grid, strokeWidth: 1 },
       ),
     );
     field.detail.bits.forEach((bit, i) => {
@@ -442,13 +442,13 @@ function renderDetailPanel(
           line(
             { x: body.x, y: rowY },
             { x: body.x + body.width, y: rowY },
-            { stroke: t.colors.grid, strokeWidth: 1 },
+            { stroke: ctx.colors.grid, strokeWidth: 1 },
           ),
         );
       const stackRow: string[] = [
         renderLines(layout.rangeLines, body.x + 10, rowY + layout.primaryBaselineOffset, {
           size: ctx.fonts.detailStack,
-          fill: t.colors.text,
+          fill: ctx.colors.text,
           lineHeight: ctx.fonts.detailStack * t.detailPanel.stack.valueLineHeight,
           fontFamily: ctx.fontFamily,
         }),
@@ -459,7 +459,7 @@ function renderDetailPanel(
           {
             size: ctx.fonts.detailStack,
             weight: 700,
-            fill: t.colors.accent,
+            fill: ctx.colors.accent,
             lineHeight: ctx.fonts.detailStack * t.detailPanel.stack.valueLineHeight,
           fontFamily: ctx.fontFamily,
           },
@@ -470,7 +470,7 @@ function renderDetailPanel(
           rowY + layout.primaryBaselineOffset,
           {
             size: ctx.fonts.detailStack,
-            fill: t.colors.text,
+            fill: ctx.colors.text,
             anchor: "end",
             lineHeight: ctx.fonts.detailStack * t.detailPanel.stack.valueLineHeight,
           fontFamily: ctx.fontFamily,
@@ -485,7 +485,7 @@ function renderDetailPanel(
             rowY + (layout.valueBaselineOffset ?? layout.primaryBaselineOffset),
             {
               size: ctx.fonts.detailBody,
-              fill: t.colors.muted,
+              fill: ctx.colors.muted,
               lineHeight: ctx.fonts.detailBody * t.detailPanel.stack.valueLineHeight,
               fontFamily: ctx.fontFamily,
             },
@@ -505,7 +505,7 @@ function renderDetailPanel(
         line(
           { x: body.x + c * cw, y: body.y },
           { x: body.x + c * cw, y: body.y + body.height },
-          { stroke: t.colors.grid, strokeWidth: 1 },
+          { stroke: ctx.colors.grid, strokeWidth: 1 },
         ),
       );
     for (let r = 1; r < effectiveRows; r += 1)
@@ -513,7 +513,7 @@ function renderDetailPanel(
         line(
           { x: body.x, y: body.y + rowOffset(r) },
           { x: body.x + body.width, y: body.y + rowOffset(r) },
-          { stroke: t.colors.grid, strokeWidth: 1 },
+          { stroke: ctx.colors.grid, strokeWidth: 1 },
         ),
       );
     field.detail.bits.forEach((bit, i) => {
@@ -526,7 +526,7 @@ function renderDetailPanel(
         renderLines(layout.rangeLines, tx, rowY + layout.primaryBaselineOffset, {
           size: ctx.fonts.detailBody,
           weight: 700,
-          fill: t.colors.accent,
+          fill: ctx.colors.accent,
           lineHeight: ctx.fonts.detailBody * t.detailPanel.grid.lineHeight,
           fontFamily: ctx.fontFamily,
         }),
@@ -536,7 +536,7 @@ function renderDetailPanel(
           rowY + (layout.secondaryBaselineOffset ?? layout.primaryBaselineOffset),
           {
             size: ctx.fonts.detailBody,
-            fill: t.colors.text,
+            fill: ctx.colors.text,
             lineHeight: ctx.fonts.detailBody * t.detailPanel.grid.lineHeight,
           fontFamily: ctx.fontFamily,
           },
@@ -550,7 +550,7 @@ function renderDetailPanel(
             rowY + (layout.valueBaselineOffset ?? layout.primaryBaselineOffset),
             {
               size: ctx.fonts.detailBody,
-              fill: t.colors.muted,
+              fill: ctx.colors.muted,
               lineHeight: ctx.fonts.detailBody * t.detailPanel.grid.lineHeight,
           fontFamily: ctx.fontFamily,
             },
