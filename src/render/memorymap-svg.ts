@@ -3,7 +3,11 @@ import {
   PACKET_A4_BODY_WIDTH_MM,
   svgParityTokens as t,
 } from "../layout/tokens.ts";
-import { resolvePacketTheme, type PacketThemeOptions } from "../layout/theme.ts";
+import {
+  resolvePacketTheme,
+  type PacketColors,
+  type PacketThemeOptions,
+} from "../layout/theme.ts";
 import { fitThenWrap, packetTextBlockHeight } from "../layout/text.ts";
 import {
   formatAddressSpan,
@@ -41,7 +45,7 @@ function formatHex(value: number, digits: number): string {
   return `0x${value.toString(16).toUpperCase().padStart(digits, "0")}`;
 }
 
-function fillFor(preset: string, colors: typeof t.colors): string {
+function fillFor(preset: string, colors: PacketColors): string {
   switch (preset) {
     case "accent":
       return "#e8eaef";

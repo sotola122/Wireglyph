@@ -652,7 +652,7 @@ function renderPageFromLayout(
   const ctx: SvgCtx = {
     fonts: page.fonts,
     fontFamily: page.fontFamily,
-    colors: t.colors,
+    colors: page.colors,
     idPrefix: page.idPrefix,
   };
   const out: string[] = [];

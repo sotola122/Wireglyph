@@ -22,6 +22,7 @@ import {
 } from "./text.ts";
 import {
   resolvePacketTheme,
+  type PacketColors,
   type PacketFontSizes,
   type ResolvedPacketTheme,
 } from "./theme.ts";
@@ -44,6 +45,8 @@ export type PacketSvgRenderOptions = {
   contentWidthMm?: number;
   contentHeightMm?: number;
   minFontPt?: number;
+  /** Per-call colour overrides; see `PacketThemeOptions.colors`. */
+  colors?: Partial<PacketColors>;
   theme?: ResolvedPacketTheme;
 };
 
@@ -134,6 +137,7 @@ export type PacketPageLayout = {
   readonly contentWidthMm: number;
   readonly fonts: PacketFontSizes;
   readonly fontFamily: string;
+  readonly colors: PacketColors;
 };
 
 export const PACKET_PAGE_BODY_BUDGET_PX =
@@ -754,6 +758,7 @@ export function layoutPacketPagesRaw(
       contentWidthMm,
       fonts,
       fontFamily: theme.fontFamily,
+      colors: theme.colors,
     });
   };
 

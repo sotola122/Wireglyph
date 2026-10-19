@@ -15,13 +15,22 @@ const FLOOR_KEYS = new Set(["size", "badge", "detailBody"]);
 export type PacketFontSizes = {
   -readonly [K in keyof typeof svgParityTokens.fonts]: number
 };
-export type PacketColors = typeof svgParityTokens.colors;
+/** Colour values are plain hex strings so callers can supply theme-derived values. */
+export type PacketColors = {
+  -readonly [K in keyof typeof svgParityTokens.colors]: string;
+};
 
 export type PacketThemeOptions = {
   readonly fontFamily?: string;
   readonly fontSizes?: Partial<Record<string, number>>;
   readonly contentWidthMm?: number;
   readonly minFontPt?: number;
+  /**
+   * Per-call colour overrides. Document toolchains derive these from their own
+   * theme tokens so a diagram does not keep the neutral grey palette while the
+   * surrounding page uses a brand colour.
+   */
+  readonly colors?: Partial<PacketColors>;
 };
 
 export type ResolvedPacketTheme = {
@@ -74,10 +83,50 @@ export function resolvePacketTheme(
     fontFamily: validateCssFontFamily(
       options.fontFamily?.trim() || DEFAULT_FONT,
     ),
-    colors: svgParityTokens.colors,
+    colors: resolveColors(options.colors),
     printScale,
     minFontFloor,
   };
+}
+
+const COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+/**
+ * Overrides are merged key by key so a caller can tint the surfaces without
+ * restating text and border colours. SVG output needs opaque hex: a CSS colour
+ * function would depend on the renderer supporting it.
+ */
+function resolveColors(
+  overrides?: Partial<PacketColors>,
+): PacketColors {
+  if (!overrides) return svgParityTokens.colors;
+  const merged: Record<string, string> = { ...svgParityTokens.colors };
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value === undefined) continue;
+    if (!(key in merged)) {
+      throw new WireglyphError(`PKT_E_COLOR: unknown colour key "${key}"`, [
+        {
+          code: "PKT_E_COLOR",
+          severity: "error",
+          message: `unknown colour key "${key}"`,
+        },
+      ]);
+    }
+    if (!COLOR_PATTERN.test(value)) {
+      throw new WireglyphError(
+        `PKT_E_COLOR: "${key}" must be an opaque hex colour, got "${value}"`,
+        [
+          {
+            code: "PKT_E_COLOR",
+            severity: "error",
+            message: `"${key}" must be an opaque hex colour, got "${value}"`,
+          },
+        ],
+      );
+    }
+    merged[key] = value;
+  }
+  return merged as PacketColors;
 }
 
 export { DEFAULT_FONT };
